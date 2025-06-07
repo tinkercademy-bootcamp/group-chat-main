@@ -47,6 +47,8 @@ private:
 
 
     std::unique_ptr<tt::chat::client::Client> actual_client_;
+
+    bool initialize_and_connect_();
 };
 
 } 
