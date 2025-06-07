@@ -37,6 +37,14 @@ public:
 private:
     TestClientStats stats_;
     int client_id_; 
+    std::string server_ip_param_; 
+    int server_port_param_;
+    int num_messages_to_send_param_;
+    int message_size_bytes_param_;
+    bool listen_for_replies_param_;
+    int client_think_time_ms_param_;
+    std::string common_channel_name_param_;
+
 
     std::unique_ptr<tt::chat::client::Client> actual_client_;
 };
