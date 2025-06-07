@@ -5,6 +5,8 @@
 #include <chrono>
 #include <atomic> 
 
+#include "../../src/client/chat-client.h"
+#include <memory> 
 namespace tt::chat::test {
 
 struct TestClientStats {
@@ -19,16 +21,24 @@ struct TestClientStats {
 
 class TestClient {
 public:
-    // Constructor will be added later
-    // Destructor will be added later
+    TestClient(int id,
+                      const std::string& server_ip, int server_port,
+                      int num_messages_to_send, int message_size_bytes,
+                      bool listen_for_replies, int client_think_time_ms,
+                      const std::string& common_channel_name);
+    ~TestClient();
 
-    // Placeholder methods
+    TestClient(const TestClient&) = delete;
+    TestClient& operator=(const TestClient&) = delete;
+
     // void run();
     // const TestClientStats& get_stats();
 
 private:
     TestClientStats stats_;
-    int client_id_; // To be initialized by constructor
+    int client_id_; 
+
+    std::unique_ptr<tt::chat::client::Client> actual_client_;
 };
 
 } 
