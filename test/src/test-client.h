@@ -31,8 +31,8 @@ public:
     TestClient(const TestClient&) = delete;
     TestClient& operator=(const TestClient&) = delete;
 
-    // void run();
-    // const TestClientStats& get_stats();
+    void run_test();
+    const TestClientStats& get_stats() const;
 
 private:
     TestClientStats stats_;
