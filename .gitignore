@@ -1,49 +1,46 @@
-.clangd
-external-tools/*
-profiling-data/*
-perf.*
-
+# =====================
+# General 
+# =====================
 .DS_Store
 Thumbs.db
 
-Compiled Object files
+# Compiled Object files
 *.d
 *.o
 *.lo
 *.slo
 *.obj
 
-Precompiled Headers
+# Precompiled Headers
 *.gch
 *.pch
 
-Compiled Dynamic libraries
+# Compiled Dynamic libraries
 *.so
 *.dylib
 *.dll
 
-Fortran module files
+# Fortran module files
 *.smod
 
-Compiled Static libraries
+# Compiled Static libraries
 *.lai
 *.la
 *.a
 *.lib
 
-Executables
+# Executables
 *.exe
 *.out
 *.app
 
-Debugging and profiling
+# Debugging and profiling
 *.gcda
 *.gcno
 *.gcov
 
 /bin/
 /build/
-build/
 /pkg/
 /vendor/
 *.test
@@ -53,18 +50,18 @@ build/
 *.jar
 *.war
 *.ear
-.jmod
+*.jmod
 
-Compilation and dependencies
+# Compilation and dependencies
 /.gradle/
 /.mvn/
 /target/
 /out/
 
-IDE Configuration Files
+# IDE Configuration Files
 /.idea/
-/.iml
+/*.iml
 /.classpath
 /.project
 /.settings/
-/perf.*
+/.vscode/
