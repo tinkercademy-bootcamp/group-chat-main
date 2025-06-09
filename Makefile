@@ -9,6 +9,13 @@ CXXFLAGS :=-std=c++20 -Wall -Wextra -pedantic -fsanitize=address
 CXX_DEBUG_FLAGS :=-g3 -ggdb3
 CXX_RELEASE_FLAGS :=-O3
 
+
+.PHONY: flamegraph
+flamegraph:
+	CXXFLAGS += -O2 -g -fno-omit-frame-pointer 
+	
+
+
 CXXFLAGS += $(CXX_DEBUG_FLAGS)
 
 
@@ -69,7 +76,7 @@ print-vars:
 
 .PHONY: clean
 clean:
-	rm -r $(BUILD_DIR)
+	rm -rf $(BUILD_DIR)
 
 .PHONY: setup-flamegraph
 setup-flamegraph:
