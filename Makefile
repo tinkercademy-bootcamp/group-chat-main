@@ -5,13 +5,13 @@ CXX := g++
 
 # define the C/C++ compiler flags
 CXXFLAGS :=-std=c++20 -Wall -Wextra -pedantic -fsanitize=address
-CXXFLAGS += -O2 -g -fno-omit-frame-pointer  -fno-inline-functions-called-once # for flamegraph
+CXXFLAGS += -O2 -g -fno-omit-frame-pointer  # for flamegraph
 
 
 CXX_DEBUG_FLAGS :=-g3 -ggdb3
 CXX_RELEASE_FLAGS :=-O3
 
-CXXFLAGS += $(CXX_DEBUG_FLAGS)
+#CXXFLAGS += $(CXX_DEBUG_FLAGS)
 
 
 

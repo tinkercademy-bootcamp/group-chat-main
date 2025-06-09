@@ -3,7 +3,7 @@
 set -euo pipefail
 
 BIN=./build/server
-DURATION=${1:-10}   # seconds
+DURATION=${1:-120}   # seconds
 
 sudo perf record -F 200 -g -- "$BIN" &
 PID=$!
