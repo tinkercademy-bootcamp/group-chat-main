@@ -1,3 +1,7 @@
+external-tools/*
+profiling-data/*
+perf.*
+
 .DS_Store
 Thumbs.db
 
