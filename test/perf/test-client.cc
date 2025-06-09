@@ -3,6 +3,12 @@
 #include <iostream>  
 #include <thread>
 
+#include <vector>
+#include <numeric>
+#include <iomanip>
+#include <string>
+#include <cstring>
+#include <unistd.h>
 #define LOG_TEST_INFO(client_id, msg) std::cout << "[Client " << client_id << " INFO] " << msg << std::endl
 #define LOG_TEST_ERROR(client_id, msg) std::cerr << "[Client " << client_id << " ERROR] " << msg << std::endl
 
@@ -26,7 +32,17 @@ TestClient::TestClient(int id, const std::string& server_ip, int server_port, in
 
 
 TestClient::~TestClient() {
-    keep_running_ = false; // Stop any ongoing operations
+    keep_running_ = false; // 1. Signal listener thread to stop.
+
+    if (actual_client_ && actual_client_->get_socket_fd() != -1) {
+        // 2. Shutdown the socket. This will cause a blocked read() in the listener to return (often with error or 0).
+        ::shutdown(actual_client_->get_socket_fd(), SHUT_RDWR);
+    }
+
+    if (listener_thread_.joinable()) {
+        // 3. Wait for the listener thread to actually finish its execution.
+        listener_thread_.join();
+    }
 }
 
 bool TestClient::initialize_and_connect_() {
@@ -126,7 +142,7 @@ void TestClient::run_test() {
          stats_.total_run_duration = std::chrono::high_resolution_clock::now() - scenario_start_time;
          return;
     }
-    
+
 }
 
 
