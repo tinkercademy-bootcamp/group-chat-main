@@ -54,6 +54,8 @@ private:
 
     std::atomic<bool> keep_running_{false};
 
+    std::thread listener_thread_;
+
     bool initialize_and_connect_();
     void perform_initial_setup_();  // Sets name, creates and joins channel
     void execute_send_phase_();
