@@ -76,7 +76,12 @@ void EpollServer::handle_client_data(int client_sock) {
 
   std::string msg(buffer, len);
   if (msg.rfind("/name ", 0) == 0) {
-    assign_username(client_sock, msg.substr(6));
+    std::string name = msg.substr(6);
+    if(name == "" || name[0] == ' ') {
+      send(client_sock, "Username cannot be empty and cannot begin with a white space.\n", 63, 0);
+      return;
+    }
+    assign_username(client_sock, name);
   } else if (msg.rfind("/create ", 0) == 0) {
     std::string ch = msg.substr(8);
     if(ch == "" || ch[0] == ' ') {
