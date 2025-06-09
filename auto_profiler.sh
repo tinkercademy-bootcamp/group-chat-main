@@ -13,7 +13,7 @@ sleep "$DURATION"
 sudo kill -INT "$PID"   # graceful Ctrl-C
 
 mkdir -p ./profiling-data
-sudo perf script -i ./perf.data | perl ./external-tools/FlameGraph/stackcollapse-perf.pl | flamegraph.pl > ./profiling-data/flame.svg
+sudo perf script -i ./perf.data | perl ./external-tools/FlameGraph/stackcollapse-perf.pl | perl ./external-tools/FlameGraph/flamegraph.pl > ./profiling-data/flame.svg
 sudo mv perf.data* ./profiling-data/
 
 echo "Flame graph written to ./profiling-data/flame.svg"
