@@ -36,6 +36,7 @@ bool TestClient::initialize_and_connect_() {
             server_port_param_, server_ip_param_
         );
         stats_.connection_successful = true;
+        LOG_TEST_INFO(client_id_, "Connection successful.");
     } catch (const std::runtime_error& e) {
         stats_.error_message = "Connection failed: " + std::string(e.what());
         stats_.connection_successful = false;
@@ -67,7 +68,7 @@ void TestClient::perform_initial_setup_() {
             actual_client_->send_message(join_cmd);
             std::this_thread::sleep_for(std::chrono::milliseconds(20)); // Small delay
         }
-        // LOG_TEST_INFO(client_id_, "Initial setup commands sent.");
+        LOG_TEST_INFO(client_id_, "Initial setup commands sent.");
     } catch (const std::runtime_error& e) {
         stats_.error_message = "Initial setup send failed: " + std::string(e.what());
         keep_running_ = false; // Stop the test if setup fails
