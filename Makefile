@@ -5,6 +5,8 @@ CXX := g++
 
 # define the C/C++ compiler flags
 CXXFLAGS :=-std=c++20 -Wall -Wextra -pedantic -fsanitize=address
+CXXFLAGS += -O2 -g -fno-omit-frame-pointer  -fno-inline-functions-called-once # for flamegraph
+
 
 CXX_DEBUG_FLAGS :=-g3 -ggdb3
 CXX_RELEASE_FLAGS :=-O3
@@ -69,7 +71,7 @@ print-vars:
 
 .PHONY: clean
 clean:
-	rm -r $(BUILD_DIR)
+	rm -rf $(BUILD_DIR)
 
 # Include the .d makefiles. The - at the front suppresses the errors of missing
 # Makefiles. Initially, all the .d files will be missing, and we don't want those
