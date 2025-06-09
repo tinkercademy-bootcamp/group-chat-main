@@ -107,6 +107,19 @@ int main(int argc, char* argv[]) {
             g_client_running = false; // Signal threads to stop
             break;
         }
+        if (input_line == "/help") {
+     std::cout << "\nAvailable commands:\n";
+     std::cout << "  /list                 - List available channels\n";
+     std::cout << "  /create <name>        - Create a new channel\n";
+     std::cout << "  /join <name>          - Join a channel\n";
+     std::cout << "  /users                - List users in current channel\n";
+     std::cout << "  /msg @user <message>  - Send a private message\n";
+     std::cout << "  /sendfile <filename>  - Upload file\n";
+     std::cout << "  /name <your_name>     - Set or change your display name\n";  // ✅ keep this
+     std::cout << "  /help                 - Show this help message\n";
+     continue;
+}
+
 
         if (!input_line.empty()) {
             try {
