@@ -7,6 +7,7 @@
 
 #include "../../src/client/chat-client.h"
 #include <memory> 
+#include <thread>
 namespace tt::chat::test {
 
 struct TestClientStats {
