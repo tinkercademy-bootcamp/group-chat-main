@@ -1,7 +1,7 @@
 #include "test-client.h"
 #include <algorithm> 
 #include <iostream>  
-
+#include <thread>
 namespace tt::chat::test {
 
 TestClient::TestClient(int id,
@@ -40,6 +40,32 @@ bool TestClient::initialize_and_connect_() {
     }
     stats_.connection_time_taken = std::chrono::high_resolution_clock::now() - start_conn_time;
     return stats_.connection_successful;
+}
+
+void TestClient::perform_initial_setup_() {
+    if (!stats_.connection_successful || !actual_client_) return;
+
+    try {
+        // 1. Set username
+        std::string name_cmd = "/name TestUser" + std::to_string(client_id_);
+        actual_client_->send_message(name_cmd);
+        std::this_thread::sleep_for(std::chrono::milliseconds(20)); // Small delay
+        // 2. Creates a common channel
+        if (!common_channel_name_param_.empty()) {
+            std::string create_cmd = "/create " + common_channel_name_param_;
+            actual_client_->send_message(create_cmd);
+            std::this_thread::sleep_for(std::chrono::milliseconds(20)); // Small delay
+        }
+        // 3. Join a common channel
+        if (!common_channel_name_param_.empty()) {
+            std::string join_cmd = "/join " + common_channel_name_param_;
+            actual_client_->send_message(join_cmd);
+            std::this_thread::sleep_for(std::chrono::milliseconds(20)); // Small delay
+        }
+        // LOG_TEST_INFO(client_id_, "Initial setup commands sent.");
+    } catch (const std::runtime_error& e) {
+        stats_.error_message = "Initial setup send failed: " + std::string(e.what());
+    }
 }
 
 void TestClient::run_test() {
