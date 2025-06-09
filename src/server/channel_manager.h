@@ -14,7 +14,7 @@ namespace tt::chat::server {
         bool has_channel(const std::string &name) const;
         std::unordered_set<int>& get_members(const std::string &name);
         std::vector<std::string> list_channels() const;
-        void join_channel(const std::string &name, int client_fd);
+        void join_channel(const std::string &name, const std::string &prev_channel, int client_fd);
 
     private:
         std::unordered_map<std::string, std::unordered_set<int>> channels_;
