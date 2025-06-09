@@ -1,4 +1,4 @@
-#include "tcp_sockets.h"
+#include "tcp-sockets.h"
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <cstring>
@@ -6,8 +6,7 @@
 
 int create_tcp_socket() {
     int sock = socket(AF_INET, SOCK_STREAM, 0);
-    tt::chat::check_error
-    return ;
+    return 0;
 }
 
 int bind_tcp_socket(int sockfd, int port) {
