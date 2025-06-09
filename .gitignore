@@ -1,2 +1,4 @@
 perf.*
 build/*
+perf.data.*
+profiling/*

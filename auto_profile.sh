@@ -1,9 +1,8 @@
 # scripts/profile_server.sh
 #!/usr/bin/env bash
-set -euo pipefail
 
 BIN=./build/server
-DURATION=${1:-120}   # seconds
+DURATION=${1:-60}   # seconds
 
 sudo perf record -F 200 -g -- "$BIN" &
 PID=$!
@@ -11,5 +10,8 @@ echo "Server PID=$PID. Profiling for $DURATION s…"
 sleep "$DURATION"
 sudo kill -INT "$PID"   # graceful Ctrl-C
 
-sudo perf script | perl ./tools/stackcollapse-perf.pl | flamegraph.pl > flame.svg
+mkdir -p ./profiling
+sudo perf script -i ./perf.data | perl ./tools/FlameGraph/stackcollapse-perf.pl | flamegraph.pl > ./profiling/flame.svg
+sudo mv perf.data* ./profiling/
+
 echo "Flame graph written to $(realpath flame.svg)"
