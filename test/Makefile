@@ -12,7 +12,7 @@ TEST_FRAMEWORK_SRC_DIR := ./src
 
 all: $(TARGET)
 
-$(TARGET): $(TEST_FRAMEWORK_SRC_DIR)/main_tester.cc
+$(TARGET): $(TEST_FRAMEWORK_SRC_DIR)/main.cc
 	$(CXX) $(CXXFLAGS) $(INCLUDE_PATHS) $^ -o $@
 
 clean:

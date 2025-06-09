@@ -5,13 +5,13 @@
 
 #define LOG_TEST_INFO(client_id, msg) std::cout << "[Client " << client_id << " INFO] " << msg << std::endl
 #define LOG_TEST_ERROR(client_id, msg) std::cerr << "[Client " << client_id << " ERROR] " << msg << std::endl
+
 namespace tt::chat::test {
 
-TestClient::TestClient(int id,
-                                     const std::string& server_ip, int server_port,
-                                     int num_messages_to_send, int message_size_bytes,
-                                     bool listen_for_replies, int client_think_time_ms,
-                                     const std::string& common_channel_name)
+TestClient::TestClient(int id, const std::string& server_ip, int server_port, int num_messages_to_send, int message_size_bytes,
+    bool listen_for_replies, int client_think_time_ms, const std::string& common_channel_name)
+
+
     : client_id_(id),
       server_ip_param_(server_ip),
       server_port_param_(server_port),
