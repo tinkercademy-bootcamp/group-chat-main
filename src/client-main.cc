@@ -118,10 +118,6 @@ int main(int argc, char* argv[]) {
                 break;
             }
         }
-        // Only print prompt if still running, otherwise it might print after "shutting down" messages
-        if (g_client_running) {
-            std::cout << "> " << std::flush;
-        }
     }
 
     // Handle EOF (Ctrl+D) on std::cin or if loop exited due to g_client_running
