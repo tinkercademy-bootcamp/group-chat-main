@@ -79,8 +79,17 @@ void EpollServer::handle_client_data(int client_sock) {
     assign_username(client_sock, msg.substr(6));
   } else if (msg.rfind("/create ", 0) == 0) {
     std::string ch = msg.substr(8);
+    if(ch == "" || ch[0] == ' ') {
+      send(client_sock, "The channel name cannot be empty and cannot begin with a white space.\n", 71, 0);
+      return;
+    }
     channel_mgr_->create_channel(ch);
-    channel_mgr_->join_channel(ch, client_sock);
+    if(client_channels_.find(client_sock) != client_channels_.end()) {
+      channel_mgr_->join_channel(ch, client_channels_[client_sock], client_sock);
+    }
+    else {
+      channel_mgr_->join_channel(ch, "", client_sock);
+    }
     client_channels_[client_sock] = ch;
     send(client_sock, "Channel created.\n", 17, 0);
   } else if (msg.rfind("/join ", 0) == 0) {
@@ -89,7 +98,12 @@ void EpollServer::handle_client_data(int client_sock) {
       send(client_sock, "Channel not found.\n", 19, 0);
       return;
     }
-    channel_mgr_->join_channel(ch, client_sock);
+    if(client_channels_.find(client_sock) != client_channels_.end()) {
+      channel_mgr_->join_channel(ch, client_channels_[client_sock], client_sock);
+    }
+    else {
+      channel_mgr_->join_channel(ch, "", client_sock);
+    }
     client_channels_[client_sock] = ch;
     send(client_sock, "Joined channel.\n", 16, 0);
   } else if (msg.rfind("/list", 0) == 0) {
