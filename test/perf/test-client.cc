@@ -75,6 +75,42 @@ void TestClient::perform_initial_setup_() {
     }
 }
 
+void TestClient::execute_send_phase_() {
+    if (!stats_.connection_successful || !actual_client_ || !keep_running_) return;
+
+    std::string base_message_content(message_size_bytes_param_, 'A');
+    
+    auto start_send_time = std::chrono::high_resolution_clock::now();
+    for (int i = 0; i < num_messages_to_send_param_ && keep_running_; ++i) {
+        std::string current_message = "C" + std::to_string(client_id_) + "S" + std::to_string(i) + "D:";
+        size_t prefix_len = current_message.length();
+        if (prefix_len < static_cast<size_t>(message_size_bytes_param_)) {
+            current_message += base_message_content.substr(0, message_size_bytes_param_ - prefix_len);
+        } else {
+            current_message = current_message.substr(0, message_size_bytes_param_);
+        }
+        // Ensure exact size
+        current_message.resize(message_size_bytes_param_, 'P');
+
+        try {
+            actual_client_->send_message(current_message);
+            stats_.messages_sent++;
+            stats_.bytes_sent += current_message.length();
+        } catch (const std::runtime_error& e) {
+            stats_.error_message = "Send failed: " + std::string(e.what());
+            keep_running_ = false; // Stop sending for this client
+            break;
+        }
+
+        if (client_think_time_ms_param_ > 0) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(client_think_time_ms_param_));
+        }
+    }
+    stats_.send_time_taken = std::chrono::high_resolution_clock::now() - start_send_time;
+    LOG_TEST_INFO(client_id_, "Send phase completed. Messages sent: " << stats_.messages_sent);
+}
+
+
 void TestClient::run_test() {
     auto scenario_start_time = std::chrono::high_resolution_clock::now();
     keep_running_ = true; // Set true at the start of run
@@ -92,6 +128,7 @@ void TestClient::run_test() {
     }
     
 }
+
 
 const TestClientStats& TestClient::get_stats() const {
     return stats_;
