@@ -22,7 +22,9 @@ TestClient::TestClient(int id,
   }
 
 
-TestClient::~TestClient() {}
+TestClient::~TestClient() {
+    keep_running_ = false; // Stop any ongoing operations
+}
 
 bool TestClient::initialize_and_connect_() {
     auto start_conn_time = std::chrono::high_resolution_clock::now();
@@ -65,6 +67,7 @@ void TestClient::perform_initial_setup_() {
         // LOG_TEST_INFO(client_id_, "Initial setup commands sent.");
     } catch (const std::runtime_error& e) {
         stats_.error_message = "Initial setup send failed: " + std::string(e.what());
+        keep_running_ = false; // Stop the test if setup fails
     }
 }
 
