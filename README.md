@@ -23,10 +23,15 @@ epoll-chat/
 Please take a moment to read the first 2 sections of https://www.brendangregg.com/flamegraphs.html
 
 Setup:
+Run this:
 ```
 git clone https://github.com/brendangregg/FlameGraph ~/tools/FlameGraph
+```
+Add this to your .bashrc
+```
 export PATH=$PATH:$HOME/tools/FlameGraph
 ```
+
 
 To run flamegraph here, run `sh perscr.sh`
 It will start the server for 60 seconds. You can stress test it during this time.
