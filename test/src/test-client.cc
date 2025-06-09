@@ -24,4 +24,31 @@ TestClient::TestClient(int id,
 
 TestClient::~TestClient() {}
 
+bool TestClient::initialize_and_connect_() {
+    auto start_conn_time = std::chrono::high_resolution_clock::now();
+    try {
+        actual_client_ = std::make_unique<tt::chat::client::Client>(
+            server_port_param_, server_ip_param_
+        );
+        stats_.connection_successful = true;
+    } catch (const std::runtime_error& e) {
+        stats_.error_message = "Connection failed: " + std::string(e.what());
+        stats_.connection_successful = false;
+    } catch (...) { 
+        stats_.error_message = "Connection failed: Unknown exception during Client construction.";
+        stats_.connection_successful = false;
+    }
+    stats_.connection_time_taken = std::chrono::high_resolution_clock::now() - start_conn_time;
+    return stats_.connection_successful;
+}
+
+void TestClient::run_test() {
+    auto scenario_start_time = std::chrono::high_resolution_clock::now();
+    
+}
+
+const TestClientStats& TestClient::get_stats() const {
+    return stats_;
+}
+
 }
