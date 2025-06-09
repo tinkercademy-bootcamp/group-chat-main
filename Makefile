@@ -18,7 +18,7 @@ LDFLAGS := -fsanitize=address
 
 LIBS:= fmt spdlog
 LIB_FLAGS := $(addprefix -l,$(LIBS))
-LDFLAGS += $(LIB_FLAGS) -lncurses -pthread
+LDFLAGS += $(LIB_FLAGS) -pthread
 
 BUILD_DIR := build
 SRC_DIR := src
