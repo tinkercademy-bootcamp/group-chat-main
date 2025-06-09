@@ -52,6 +52,8 @@ private:
 
     std::unique_ptr<tt::chat::client::Client> actual_client_;
 
+    std::atomic<bool> keep_running_{false};
+
     bool initialize_and_connect_();
     void perform_initial_setup_();  // Sets name, creates and joins channel
 };
