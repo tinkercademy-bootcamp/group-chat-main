@@ -79,6 +79,10 @@ void EpollServer::handle_client_data(int client_sock) {
     assign_username(client_sock, msg.substr(6));
   } else if (msg.rfind("/create ", 0) == 0) {
     std::string ch = msg.substr(8);
+    if(ch == "" || ch[0] == ' ') {
+      send(client_sock, "The channel name cannot be empty and cannot begin with a white space.\n", 71, 0);
+      return;
+    }
     channel_mgr_->create_channel(ch);
     if(client_channels_.find(client_sock) != client_channels_.end()) {
       channel_mgr_->join_channel(ch, client_channels_[client_sock], client_sock);
