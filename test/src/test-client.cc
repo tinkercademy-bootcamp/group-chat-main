@@ -77,6 +77,19 @@ void TestClient::perform_initial_setup_() {
 
 void TestClient::run_test() {
     auto scenario_start_time = std::chrono::high_resolution_clock::now();
+    keep_running_ = true; // Set true at the start of run
+
+    if (!initialize_and_connect_()) {
+        keep_running_ = false; 
+        stats_.total_run_duration = std::chrono::high_resolution_clock::now() - scenario_start_time;
+        return; // Cannot proceed if connection failed
+    }
+
+    perform_initial_setup_();
+    if (!keep_running_) { // If initial setup failed
+         stats_.total_run_duration = std::chrono::high_resolution_clock::now() - scenario_start_time;
+         return;
+    }
     
 }
 
