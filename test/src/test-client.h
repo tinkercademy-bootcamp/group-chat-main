@@ -16,6 +16,8 @@ struct TestClientStats {
     long long bytes_received = 0;
     std::chrono::duration<double> connection_time_taken{};
     std::chrono::duration<double> send_time_taken{};
+    std::chrono::duration<double> listen_duration_actual{}; // How long the listener actually ran
+    std::chrono::duration<double> total_run_duration{};     // Total time for this client's test
     bool connection_successful = false;
     std::string error_message = "";
     int client_id = 0;
