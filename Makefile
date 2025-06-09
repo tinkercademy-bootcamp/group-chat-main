@@ -76,11 +76,11 @@ clean:
 .PHONY: setup-flamegraph
 setup-flamegraph:
 	mkdir -p external-tools/
-	git clone https://github.com/brendangregg/FlameGraph.git external-tools/FlameGraph
+	if [ ! -d external-tools/FlameGraph ]; then git clone https://github.com/brendangregg/FlameGraph.git external-tools/FlameGraph; fi
 	chmod +x auto_profiler.sh
 	
 .PHONY: flamegraph
-flamegraph: all
+flamegraph: all setup-flamegraph
 	./auto_profiler.sh	
 
 # Include the .d makefiles. The - at the front suppresses the errors of missing
