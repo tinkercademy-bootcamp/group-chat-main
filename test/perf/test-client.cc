@@ -126,6 +126,56 @@ void TestClient::execute_send_phase_() {
     LOG_TEST_INFO(client_id_, "Send phase completed. Messages sent: " << stats_.messages_sent);
 }
 
+void TestClient::execute_listen_phase_() {
+    if (!stats_.connection_successful || !actual_client_ || !keep_running_) return;
+
+    int socket_fd = actual_client_->get_socket_fd();
+    if (socket_fd < 0) {
+        stats_.error_message = "Listener: Invalid socket FD from actual_client.";
+        LOG_TEST_ERROR(client_id_, stats_.error_message);
+        keep_running_ = false;
+        return;
+    }
+
+
+    char buffer[4096]; // Larger buffer for receiving
+    auto listener_start_time = std::chrono::high_resolution_clock::now();
+
+    LOG_TEST_INFO(client_id_, "Listener starting.");
+    while (keep_running_) {
+        LOG_TEST_INFO(client_id_, "Listener waiting for messages...");
+        ssize_t bytes_read = ::read(socket_fd, buffer, sizeof(buffer) - 1);
+
+        if (!keep_running_ && bytes_read <=0) { // Check if told to stop (and) read is unblocked/errored
+             break;
+        }
+
+        if (bytes_read > 0) {
+
+            stats_.messages_received++;
+            stats_.bytes_received += bytes_read;
+        } else if (bytes_read == 0) { // Server closed connection
+            LOG_TEST_INFO(client_id_, "Listener: Server closed connection.");
+            if (keep_running_) stats_.error_message = "Listener: Server closed connection unexpectedly.";
+            keep_running_ = false;
+            break;
+        } else { // bytes_read < 0
+            if (errno == EINTR && keep_running_) {
+                continue; // Interrupted by signal, try again if still running
+            }
+
+            if (keep_running_) { // Only log error if we weren't expecting to stop
+                stats_.error_message = "Listener: Read error: " + std::string(strerror(errno));
+                LOG_TEST_ERROR(client_id_, stats_.error_message);
+            }
+            keep_running_ = false;
+            break;
+        }
+    }
+    stats_.listen_duration_actual = std::chrono::high_resolution_clock::now() - listener_start_time;
+    LOG_TEST_INFO(client_id_, "Listener exiting. Messages received: " << stats_.messages_received);
+}
+
 
 void TestClient::run_test() {
     auto scenario_start_time = std::chrono::high_resolution_clock::now();
@@ -143,7 +193,26 @@ void TestClient::run_test() {
          return;
     }
 
+    if (listen_for_replies_param_) {
+        listener_thread_ = std::thread(&TestClient::execute_listen_phase_, this);
+    }
+
+    if (num_messages_to_send_param_ > 0) {
+        execute_send_phase_();
+    }
+
+    // How long should the test run if listening?
+    if (!listen_for_replies_param_ && num_messages_to_send_param_ > 0) {
+         // If we only sent messages and are not listening, this client's main work is done.
+         // But with listen_for_replies_param_ == false, it shouldn't have been started.
+         keep_running_ = false; 
+    }
+
+    stats_.total_run_duration = std::chrono::high_resolution_clock::now() - scenario_start_time;
+    
 }
+    
+
 
 
 const TestClientStats& TestClient::get_stats() const {
