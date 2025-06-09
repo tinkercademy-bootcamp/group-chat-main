@@ -60,16 +60,15 @@ void EpollServer::handle_new_connection() {
 }
 
 void EpollServer::assign_username(int client_sock, const std::string& desired_name) {
-  // Check for duplicate username
-  for (const auto& [fd, uname] : usernames_) {
-    if (uname == desired_name) {
-      std::string err = "Username already exists!\n";
-      send(client_sock, err.c_str(), err.size(), 0);
-      SPDLOG_WARN("Client {} tried to assign duplicate username '{}'", client_sock, desired_name);
-      return;
-    }
+  // Efficient duplicate username check using set
+  if (usernames_set_.count(desired_name)) {
+    std::string err = "Username already exists!\n";
+    send(client_sock, err.c_str(), err.size(), 0);
+    SPDLOG_WARN("Client {} tried to assign duplicate username '{}'", client_sock, desired_name);
+    return;
   }
   usernames_[client_sock] = desired_name;
+  usernames_set_.insert(desired_name);
   std::string welcome = "Welcome, " + desired_name + "!\n";
   send(client_sock, welcome.c_str(), welcome.size(), 0);
   SPDLOG_INFO("Client {} assigned username '{}'", client_sock, desired_name);
