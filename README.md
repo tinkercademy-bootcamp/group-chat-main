@@ -21,6 +21,14 @@ epoll-chat/
 
 # Notes on Perf and Flamegraph
 Please take a moment to read the first 2 sections of https://www.brendangregg.com/flamegraphs.html
+
+Setup:
+```
+git clone https://github.com/brendangregg/FlameGraph ~/tools/FlameGraph
+export PATH=$PATH:$HOME/tools/FlameGraph
+```
+
 To run flamegraph here, run `sh perscr.sh`
 It will start the server for 60 seconds. You can stress test it during this time.
 After 60 secs, it'll create a flame.svg for you to look into the load profile
+
