@@ -1,6 +1,8 @@
 # scripts/profile_server.sh
 #!/usr/bin/env bash
 
+## This is the flamegraph generating script
+
 BIN=./build/server
 DURATION=${1:-10}   # seconds
 

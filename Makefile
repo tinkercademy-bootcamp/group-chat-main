@@ -80,7 +80,7 @@ setup-flamegraph:
 	chmod +x auto_profiler.sh
 	
 .PHONY: flamegraph
-flamegraph: all setup-flamegraph
+flamegraph: all
 	./auto_profiler.sh	
 
 # Include the .d makefiles. The - at the front suppresses the errors of missing
