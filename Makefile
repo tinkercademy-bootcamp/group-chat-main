@@ -8,12 +8,7 @@ CXXFLAGS :=-std=c++20 -Wall -Wextra -pedantic -fsanitize=address
 
 CXX_DEBUG_FLAGS :=-g3 -ggdb3
 CXX_RELEASE_FLAGS :=-O3
-
-
-.PHONY: flamegraph
-flamegraph:
-	CXXFLAGS += -O2 -g -fno-omit-frame-pointer 
-	
+CXXFLAGS += -O2 -g -fno-omit-frame-pointer 
 
 
 CXXFLAGS += $(CXX_DEBUG_FLAGS)
@@ -82,7 +77,11 @@ clean:
 setup-flamegraph:
 	mkdir -p external-tools/
 	git clone https://github.com/brendangregg/FlameGraph.git external-tools/FlameGraph
+	chmod +x auto_profiler.sh
 	
+.PHONY: flamegraph
+flamegraph: all
+	./auto_profiler.sh	
 
 # Include the .d makefiles. The - at the front suppresses the errors of missing
 # Makefiles. Initially, all the .d files will be missing, and we don't want those

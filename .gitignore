@@ -1,3 +1,4 @@
+.clangd
 external-tools/*
 profiling-data/*
 perf.*
