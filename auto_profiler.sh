@@ -16,4 +16,4 @@ mkdir -p ./profiling-data
 sudo perf script -i ./perf.data | perl ./external-tools/FlameGraph/stackcollapse-perf.pl | flamegraph.pl > ./profiling-data/flame.svg
 sudo mv perf.data* ./profiling-data/
 
-echo "Flame graph written to $(realpath flame.svg)"
+echo "Flame graph written to ./profiling-data/flame.svg"
