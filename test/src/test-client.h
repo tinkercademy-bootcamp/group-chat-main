@@ -14,6 +14,8 @@ struct TestClientStats {
     long long messages_received = 0;
     long long bytes_sent = 0;
     long long bytes_received = 0;
+    std::chrono::duration<double> connection_time_taken{};
+    std::chrono::duration<double> send_time_taken{};
     bool connection_successful = false;
     std::string error_message = "";
     int client_id = 0;
