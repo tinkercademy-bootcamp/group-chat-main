@@ -10,9 +10,9 @@ sudo perf record -F 200 -g -- "$BIN" &
 PID=$!
 echo "Server PID=$PID. Profiling for $DURATION s…"
 
-sleep 2
+sleep 5 # sleep long enough to start the server
 if [[ "$*" == *"--auto"* ]]; then
-    ./test/chat_load_tester 127.0.0.1 8080 10 100 64 1 10 testchannel
+    ./test/chat_load_tester 127.0.0.1 8080 1000 10000 256 1 0 testchannel
 fi
 
 sleep "$DURATION"
