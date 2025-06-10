@@ -240,7 +240,7 @@ void TestClient::execute_listen_phase_() {
 
         if (bytes_read > 0) {
 
-            stats_.messages_received++;
+            // stats_.messages_received++;
             stats_.bytes_received += bytes_read;
             buffer[bytes_read] = '\0'; // Null-terminate the received chunk
             partial_message_buffer += buffer; // Append to any previous partial message
@@ -267,10 +267,16 @@ void TestClient::execute_listen_phase_() {
                         stats_.relevant_messages_received_for_latency++;
                         auto recv_timestamp = std::chrono::steady_clock::now();
                         auto latency = recv_timestamp - send_timestamp;
-                        stats_.latencies_ns.push_back(latency);
+                        // stats_.latencies_ns.push_back(latency);
                         LOG_TEST_INFO(client_id_, "Received test message from client " << sender_id
                             << " with SEQ " << msg_seq << " at " << std::chrono::duration_cast<std::chrono::nanoseconds>(recv_timestamp.time_since_epoch()).count()
-                            << " ns, latency: " << std::chrono::duration_cast<std::chrono::nanoseconds>(latency).count() << " ns");
+                            << " ns, latency: " << std::chrono::duration_cast<std::chrono::nanoseconds>(latency).count()  << " ns");
+                        auto latency_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(latency).count();
+                        stats_.latencies_ns.push_back(std::chrono::nanoseconds(latency_ns));
+                        // print latency_ns 
+                        for (const auto& latency : stats_.latencies_ns) {
+                            LOG_TEST_INFO(client_id_, "Latency recorded: " << std::chrono::duration_cast<std::chrono::nanoseconds>(latency).count() << " ns");
+                        }
                     }
                 } else {
                     // It might be a server status message or a non-test chat message
@@ -306,6 +312,7 @@ void TestClient::execute_listen_phase_() {
             }
 
 
+
         } else if (bytes_read == 0) { // Server closed connection
             LOG_TEST_INFO(client_id_, "Listener: Server closed connection.");
             if (keep_running_) stats_.error_message = "Listener: Server closed connection unexpectedly.";
@@ -324,11 +331,15 @@ void TestClient::execute_listen_phase_() {
             break;
         }
     }
+    // print latencies collected so far
+    for (const auto& latency : stats_.latencies_ns) {
+        LOG_TEST_INFO(client_id_, "Latency recorded: " << std::chrono::duration_cast<std::chrono::nanoseconds>(latency).count() << " ns");
+    }
     stats_.listen_phase_duration = std::chrono::steady_clock::now() - listener_start_time;
     LOG_TEST_INFO(client_id_, "Listener exiting. Messages received: " << stats_.messages_received);
 }
-
-
+ 
+ 
 void TestClient::run_test() {
     auto scenario_start_time = std::chrono::steady_clock::now();
     keep_running_ = true; // Set true at the start of run
