@@ -100,8 +100,14 @@ int main(int argc, char* argv[]) {
         total_relevant_messages_for_latency_agg += stats.relevant_messages_received_for_latency;
         if (listen_replies) { // Only collect latencies if clients were listening
             std::cout << "Client " << stats.client_id << " Latencies: " << stats.latencies_ns.size() << std::endl;
+            
             all_latencies_collected_ns.insert(all_latencies_collected_ns.end(),
                                              stats.latencies_ns.begin(), stats.latencies_ns.end());
+            // print all latencies collected so far
+            std::cout << "Client " << stats.client_id << " Collected Latencies (ns): ";
+            for (const auto& latency: all_latencies_collected_ns) {
+                std::cout << std::chrono::duration_cast<std::chrono::nanoseconds>(latency).count() << " ";
+            }
         }
         if (!stats.error_message.empty()) {
             std::cout << "Client " << stats.client_id << " Error: " << stats.error_message << std::endl;
@@ -139,10 +145,15 @@ if (listen_replies && !all_latencies_collected_ns.empty()) {
         std::cout << "Total Relevant Messages for Latency Measurement: " << total_relevant_messages_for_latency_agg << std::endl;
 
         std::sort(all_latencies_collected_ns.begin(), all_latencies_collected_ns.end());
+        //print all contents in all_latencies_collected_ns
+        std::cout << "Collected Latencies (ns): ";
+        for (const auto& lat : all_latencies_collected_ns) {
+            std::cout << lat.count() << " ";
+        }
 
         double sum_latency_ns = 0;
         for (const auto& lat_ns : all_latencies_collected_ns) {
-            sum_latency_ns += lat_ns.count();
+            sum_latency_ns += std::chrono::duration_cast<std::chrono::nanoseconds>(lat_ns).count();
         }
         double avg_latency_ns = sum_latency_ns / all_latencies_collected_ns.size();
         double avg_latency_ms = avg_latency_ns / 1e6; // Convert ns to ms
