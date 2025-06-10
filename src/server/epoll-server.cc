@@ -97,9 +97,13 @@ void EpollServer::handle_client_data(int client_sock) {
 }
 
 void EpollServer::parse_client_command(int client_sock, const std::string& msg){
-    if (msg.rfind("/name", 0) == 0 && msg.size() > 5 && std::isspace(msg[5])) {
-        handle_name_command(client_sock, msg);
-    } else if (msg.rfind("/create ", 0) == 0) {
+  if (msg.rfind("/name", 0) == 0 && msg.size() > 5 && std::isspace(msg[5])) {
+      handle_name_command(client_sock, msg);
+  } 
+  else if (msg.rfind("/name", 0) == 0) {
+    send_message(client_sock, "Username cannot be created.\n");
+  }
+  else if (msg.rfind("/create ", 0) == 0) {
     handle_create_command(client_sock, msg);
   } else if (msg.rfind("/join ", 0) == 0) {
     handle_join_command(client_sock, msg);
