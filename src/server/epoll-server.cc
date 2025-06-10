@@ -6,6 +6,7 @@
 
 #include <spdlog/spdlog.h>
 #include <fstream>
+#include <cctype> // Add this include for std::isspace
 
 namespace tt::chat::server {
 
@@ -58,10 +59,29 @@ void EpollServer::handle_new_connection() {
 }
 
 void EpollServer::assign_username(int client_sock, const std::string& desired_name) {
-  usernames_[client_sock] = desired_name;
-  std::string welcome = "Welcome, " + desired_name + "!\n";
+  std::string trimmed_name = desired_name;
+  // Remove leading/trailing whitespace
+  trimmed_name.erase(0, trimmed_name.find_first_not_of(" \t\n\r"));
+  trimmed_name.erase(trimmed_name.find_last_not_of(" \t\n\r") + 1);
+
+  if (trimmed_name.empty()) {
+    send_message(client_sock, "Username cannot be created.\n");
+    SPDLOG_WARN("Client {} attempted to set an empty username.", client_sock);
+    return;
+  }
+  if (username_set_.count(trimmed_name)) {
+    send_message(client_sock, "Duplicate usernames are not allowed.\n");
+    return;
+  }
+  // Remove old username from set if exists
+  if (usernames_.count(client_sock)) {
+    username_set_.erase(usernames_[client_sock]);
+  }
+  usernames_[client_sock] = trimmed_name;
+  username_set_.insert(trimmed_name);
+  std::string welcome = "Welcome, " + trimmed_name + "!\n";
   send_message(client_sock, welcome.c_str(), welcome.size(), 0);
-  SPDLOG_INFO("Client {} assigned username '{}'", client_sock, desired_name);
+  SPDLOG_INFO("Client {} assigned username '{}'", client_sock, trimmed_name);
   }
 
 void EpollServer::handle_client_data(int client_sock) {
@@ -77,9 +97,9 @@ void EpollServer::handle_client_data(int client_sock) {
 }
 
 void EpollServer::parse_client_command(int client_sock, const std::string& msg){
-    if (msg.rfind("/name ", 0) == 0) {
-    handle_name_command(client_sock, msg);
-  } else if (msg.rfind("/create ", 0) == 0) {
+    if (msg.rfind("/name", 0) == 0 && msg.size() > 5 && std::isspace(msg[5])) {
+        handle_name_command(client_sock, msg);
+    } else if (msg.rfind("/create ", 0) == 0) {
     handle_create_command(client_sock, msg);
   } else if (msg.rfind("/join ", 0) == 0) {
     handle_join_command(client_sock, msg);
@@ -99,13 +119,29 @@ void EpollServer::parse_client_command(int client_sock, const std::string& msg){
 }
 
 void EpollServer::handle_name_command(int client_sock, const std::string& msg) {
-  assign_username(client_sock, msg.substr(6));
+  std::string name = msg.substr(6);
+  // Remove leading/trailing whitespace
+  name.erase(0, name.find_first_not_of(" \t\n\r"));
+  name.erase(name.find_last_not_of(" \t\n\r") + 1);
+  if (name.empty()) {
+    send_message(client_sock, "Username cannot be created.\n");
+    return;
+  }
+  assign_username(client_sock, name);
 }
 
 void EpollServer::handle_create_command(int client_sock, const std::string& msg) {
   std::string ch = msg.substr(8);
-  if(ch == "" || ch[0] == ' ') {
+  // Remove leading/trailing whitespace
+  ch.erase(0, ch.find_first_not_of(" \t\n\r"));
+  ch.erase(ch.find_last_not_of(" \t\n\r") + 1);
+
+  if(ch.empty() || ch[0] == ' ') {
     send_message(client_sock, "The channel name cannot be empty and cannot begin with a white space.\n");
+    return;
+  }
+  if (channel_mgr_->has_channel(ch)) {
+    send_message(client_sock, "Duplicate channel names are not allowed.\n");
     return;
   }
   channel_mgr_->create_channel(ch);
@@ -172,7 +208,9 @@ void EpollServer::handle_users_command(int client_sock) {
   std::string ch = client_channels_[client_sock];
   std::string list = "Users in [" + ch + "]:\n";
   for (int fd : channel_mgr_->get_members(ch)) {
-      list += "- " + usernames_[fd] + "\n";
+      // Only show users with assigned usernames
+      if (usernames_.count(fd))
+        list += "- " + usernames_[fd] + "\n";
   }
   send_message(client_sock, list.c_str());
 }
@@ -254,4 +292,4 @@ int EpollServer::send_message(int client_sock, const std::string& message) {
   return send_message(client_sock, message.c_str(), message.size(), 0);
 }
 
-} 
+}
