@@ -53,8 +53,8 @@ void EpollServer::handle_new_connection() {
   ev.data.fd = client_sock;
   check_error(epoll_ctl(epoll_fd_, EPOLL_CTL_ADD, client_sock, &ev) < 0, "epoll_ctl client_sock");
 
-  client_usernames_[client_sock] = "user_" + std::to_string(client_sock);  // temporary username
-  SPDLOG_INFO("New connection: {}", client_usernames_[client_sock]);
+  usernames_[client_sock] = "user_" + std::to_string(client_sock);  // temporary username
+  SPDLOG_INFO("New connection: {}", usernames_[client_sock]);
 
 }
 
@@ -86,6 +86,50 @@ void EpollServer::assign_username(int client_sock, const std::string& desired_na
 
 void EpollServer::handle_client_data(int client_sock) {
   char buffer[1024];
+  if (length_remaining[client_sock] > 0) {
+    ssize_t len = 0;
+    do {
+      len = read(client_sock, buffer, sizeof(buffer));
+      if (len < 0) {
+        if (errno == EAGAIN || errno == EWOULDBLOCK) {
+          // No more data available
+          break;
+        } else {
+          SPDLOG_ERROR("Read error on client {}: {}", client_sock, strerror(errno));
+          disconnect_client(client_sock);
+          return;
+        }
+      }
+      if (len > 0) {
+        buffers[client_sock].append(buffer, len);
+        length_remaining[client_sock] -= len;
+      }
+    } while (len > 0 && length_remaining[client_sock] > 0);
+  } else {
+    ssize_t len = 0;
+    len = read(client_sock, buffer, sizeof(buffer));
+    if (len < 0) {
+      if (errno == EAGAIN || errno == EWOULDBLOCK) {
+        // No more data available
+        return;
+      } else {
+        SPDLOG_ERROR("Read error on client {}: {}", client_sock, strerror(errno));
+        disconnect_client(client_sock);
+        return;
+      }
+    }
+    if (len == 0) {
+      // Client disconnected
+      SPDLOG_INFO("Client {} disconnected", client_sock);
+      disconnect_client(client_sock);
+      return;
+    }
+    if (len > 0) {
+      length_remaining[client_sock] = buffer[3] + buffer[2] << 8 + buffer[1] << 16 + buffer[0] << 24;
+      buffers[client_sock].append(buffer+4, len-4);
+      
+    }
+  }
   ssize_t len = read(client_sock, buffer, sizeof(buffer));
   if (len <= 0) {
     // cleanup
@@ -263,7 +307,7 @@ void EpollServer::broadcast_to_channel(const std::string &channel, const std::st
 }
 
 void EpollServer::broadcast_message(const std::string &message, int sender_fd) {
-  for (const auto &[fd, name] : client_usernames_) {
+  for (const auto &[fd, name] : usernames_) {
     if (fd != sender_fd) {
       send_message(fd, message.c_str());
     }
