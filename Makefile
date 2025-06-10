@@ -1,5 +1,5 @@
 # Thanks to Job Vranish (https://spin.atomicobject.com/2016/08/26/makefile-c-projects/)
-
+SHELL := /bin/bash
 # define the C/C++ compiler to use
 CXX := g++
 
@@ -8,7 +8,7 @@ CXXFLAGS :=-std=c++20 -Wall -Wextra -pedantic -fsanitize=address
 
 CXX_DEBUG_FLAGS :=-g3 -ggdb3
 CXX_RELEASE_FLAGS :=-O3
-CXXFLAGS += -O2 -g -fno-omit-frame-pointer 
+CXXFLAGS += -O0 -g -fno-omit-frame-pointer 
 
 
 CXXFLAGS += $(CXX_DEBUG_FLAGS)
