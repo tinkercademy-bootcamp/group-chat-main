@@ -4,11 +4,17 @@
 ## This is the flamegraph generating script
 
 BIN=./build/server
-DURATION=${1:-120}   # seconds
+DURATION=${2:-10}   # seconds
 
-sudo perf record -F 200 -g -- "$BIN" &
+sudo perf record -F 997 -g -- "$BIN" &
 PID=$!
 echo "Server PID=$PID. Profiling for $DURATION s…"
+
+sleep 4 # sleep long enough to start the server
+if [[ "$*" == *"--auto"* ]]; then
+    ./test/chat_load_tester 127.0.0.1 8080 10 1000 64 1 10 testchannel
+fi
+
 sleep "$DURATION"
 sudo kill -INT "$PID"   # graceful Ctrl-C
 
