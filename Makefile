@@ -1,5 +1,5 @@
 # Thanks to Job Vranish (https://spin.atomicobject.com/2016/08/26/makefile-c-projects/)
-
+SHELL := /bin/bash
 # define the C/C++ compiler to use
 CXX := g++
 
@@ -49,7 +49,7 @@ INC_FLAGS := $(addprefix -I,$(INC_DIRS))
 # These files will have .d instead of .o as the output.
 CPPFLAGS := $(INC_FLAGS) -MMD -MP
 
-all: $(BUILD_DIR)/server $(BUILD_DIR)/client
+all: $(BUILD_DIR)/server $(BUILD_DIR)/client test
 	
 $(BUILD_DIR)/server: $(BUILD_DIR)/src/server-main.cc.o $(NON_MAIN_OBJS)
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(BUILD_DIR)/src/server-main.cc.o $(NON_MAIN_OBJS) -o $(BUILD_DIR)/server $(LDFLAGS)
@@ -73,15 +73,26 @@ print-vars:
 clean:
 	rm -rf $(BUILD_DIR)
 
+# you're supposed to run this exactly once
 .PHONY: setup-flamegraph
-setup-flamegraph:
+setup-flamegraph: all
 	mkdir -p external-tools/
 	if [ ! -d external-tools/FlameGraph ]; then git clone https://github.com/brendangregg/FlameGraph.git external-tools/FlameGraph; fi
 	chmod +x auto_profiler.sh
 	
+# run this to start server with flamegraph for $duration seconds
 .PHONY: flamegraph
 flamegraph: all
 	./auto_profiler.sh	
+
+.PHONY: stress
+stress: all
+	./auto_profiler.sh --auto
+
+./test/chat_load_tester:
+	cd test && make && cd ..
+
+test: ./test/chat_load_tester
 
 # Include the .d makefiles. The - at the front suppresses the errors of missing
 # Makefiles. Initially, all the .d files will be missing, and we don't want those
