@@ -46,6 +46,7 @@ Thumbs.db
 
 /bin/
 /build/
+build/
 /pkg/
 /vendor/
 *.test
