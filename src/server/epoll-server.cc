@@ -84,17 +84,76 @@ void EpollServer::assign_username(int client_sock, const std::string& desired_na
   SPDLOG_INFO("Client {} assigned username '{}'", client_sock, trimmed_name);
   }
 
-void EpollServer::handle_client_data(int client_sock) {
-  char buffer[1024];
-  ssize_t len = read(client_sock, buffer, sizeof(buffer));
-  if (len <= 0) {
-    // cleanup
-    return;
-  }
+// void EpollServer::handle_client_data(int client_sock) {
+//   char msg_len[20];
+//   ssize_t len = read(client_sock, msg_len, sizeof(msg_len));
+//   if (len <= 0) {
+//     // cleanup
+//     return;
+//   }
 
-  std::string msg(buffer, len);
-  parse_client_command(client_sock, msg);
+//   int msg_length = atoi(msg_len);
+//   char* buffer = (char*)malloc(sizeof(char)*(msg_length+5));
+//   len = read(client_sock, buffer, sizeof(buffer));
+//   std::string msg(buffer, len);
+//   std::cout << msg_length << " " << msg << "\n";
+//   parse_client_command(client_sock, msg);
+// }
+
+void EpollServer::handle_client_data(int client_sock) {
+    char len_buf[20 + 1]; // +1 for null terminator
+    len_buf[20] = '\0'; // Ensure null termination
+
+    // --- MODIFICATION: Robustly read the fixed-size length prefix ---
+    ssize_t total_received_len = 0;
+    while (total_received_len < 20) {
+        ssize_t received_bytes = recv(client_sock, len_buf + total_received_len, 20 - total_received_len, 0);
+        if (received_bytes < 0) {
+            if (errno == EINTR) continue; // Interrupted system call, retry
+            SPDLOG_ERROR("Error reading message length from client {}: {}. Disconnecting.", client_sock, strerror(errno));
+            return;
+        }
+        if (received_bytes == 0) { // Client disconnected gracefully
+            SPDLOG_INFO("Client {} disconnected during length read. Disconnecting.", client_sock);
+            return;
+        }
+        total_received_len += received_bytes;
+    }
+
+    int msg_length = atoi(len_buf);
+    if (msg_length <= 0 || msg_length > 65535) { // Basic sanity check for message length (e.g., max 64KB)
+        SPDLOG_WARN("Client {} sent invalid message length: '{}' (parsed as {}). Disconnecting.",
+                    client_sock, len_buf, msg_length);
+        send_message(client_sock, "Server: Invalid message format (length).\n"); // Try to send error
+        return;
+    }
+
+    // --- MODIFICATION: Use std::vector for dynamic buffer and robustly read the message body ---
+    std::vector<char> buffer(msg_length); // Safer and more idiomatic C++ than malloc/VLA
+
+    ssize_t total_received_msg = 0;
+    while (total_received_msg < msg_length) {
+        ssize_t received_bytes = recv(client_sock, buffer.data() + total_received_msg, msg_length - total_received_msg, 0);
+        if (received_bytes < 0) {
+            if (errno == EINTR) continue; // Interrupted system call, retry
+            SPDLOG_ERROR("Error reading message body from client {}: {}. Disconnecting.", client_sock, strerror(errno));
+            return;
+        }
+        if (received_bytes == 0) { // Client disconnected gracefully
+            SPDLOG_INFO("Client {} disconnected during message body read. Disconnecting.", client_sock);
+            return;
+        }
+        total_received_msg += received_bytes;
+    }
+
+    std::string msg(buffer.data(), msg_length); // Create string from the exact read bytes
+    SPDLOG_INFO("Received from client {}: length={} message='{}'", client_sock, msg_length, msg);
+    // Remove std::cout, use SPDLOG_INFO for logging
+    // std::cout << msg_length << " " << msg << "\n";
+
+    parse_client_command(client_sock, msg);
 }
+
 
 void EpollServer::parse_client_command(int client_sock, const std::string& msg){
   if (msg.rfind("/name", 0) == 0 && msg.size() > 5 && std::isspace(msg[5])) {
@@ -141,6 +200,7 @@ void EpollServer::handle_create_command(int client_sock, const std::string& msg)
   // Remove leading/trailing whitespace
   ch.erase(0, ch.find_first_not_of(" \t\n\r"));
   ch.erase(ch.find_last_not_of(" \t\n\r") + 1);
+  std::cout << msg << " " << ch << "\n";
 
   if(ch.empty() || ch[0] == ' ') {
     send_message(client_sock, "The channel name cannot be empty and cannot begin with a white space.\n");
@@ -300,16 +360,71 @@ void EpollServer::run() {
   }
 }
 
+// int EpollServer::send_message(int client_sock, const char* msg, size_t len, int flags) {
+//   ssize_t sent = send(client_sock, msg, len, flags);
+//   if (sent < 0) {
+//     SPDLOG_ERROR("Failed to send to client {}: {}", client_sock, strerror(errno));
+//     return -1;
+//   }
+//   return sent;
+// }
+// int EpollServer::send_message(int client_sock, const std::string& message) {
+//   std::string msg_sz = std::to_string(message.size());
+//   while(msg_sz.size() < 20) msg_sz += '\0';
+//   send_message(client_sock, msg_sz.c_str(), msg_sz.size(), 0);
+//   return send_message(client_sock, message.c_str(), message.size(), 0);
+// }
+
 int EpollServer::send_message(int client_sock, const char* msg, size_t len, int flags) {
-  ssize_t sent = send(client_sock, msg, len, flags);
-  if (sent < 0) {
-    SPDLOG_ERROR("Failed to send to client {}: {}", client_sock, strerror(errno));
-    return -1;
-  }
-  return sent;
+    size_t total_sent = 0;
+    while (total_sent < len) {
+        ssize_t sent = send(client_sock, msg + total_sent, len - total_sent, flags);
+        if (sent < 0) {
+            if (errno == EINTR) continue; // Interrupted system call, retry
+            SPDLOG_ERROR("Failed to send to client {}: {} (errno: {})", client_sock, strerror(errno), errno);
+            return -1;
+        }
+        if (sent == 0) { // Peer disconnected unexpectedly
+            SPDLOG_WARN("Client {} disconnected during send (0 bytes sent). Disconnecting.", client_sock);
+            return 0;
+        }
+        total_sent += sent;
+    }
+    return total_sent;
 }
+
+// --- MODIFICATION: Robust send_message for std::string ---
 int EpollServer::send_message(int client_sock, const std::string& message) {
-  return send_message(client_sock, message.c_str(), message.size(), 0);
+  // Pad the length string with leading zeros to 20 characters
+  std::string msg_sz_str = std::to_string(message.size());
+  if (msg_sz_str.length() > 20) {
+      SPDLOG_ERROR("Message size ({}) exceeds {}-character length prefix limit for client {}. This message might be truncated at receiver.",
+                   message.size(), 20, client_sock);
+      // As a fallback, take the last LENGTH_PREFIX_SIZE chars to ensure fixed size,
+      // but warn that the protocol might be broken for very large messages.
+      msg_sz_str = msg_sz_str.substr(msg_sz_str.length() - 20);
+  }
+  // Pad with leading '0' characters
+  msg_sz_str = std::string(20 - msg_sz_str.length(), '0') + msg_sz_str;
+
+  // Send the length prefix first
+  int bytes_sent_len = send_message(client_sock, msg_sz_str.c_str(), msg_sz_str.length(), 0);
+  if (bytes_sent_len <= 0 || (size_t)bytes_sent_len != msg_sz_str.length()) {
+      SPDLOG_ERROR("Failed to send full length prefix to client {}. Sent: {} (expected {}). Disconnecting.",
+                   client_sock, bytes_sent_len, msg_sz_str.length());
+      // handle_disconnect already called by send_message above if error/disconnect
+      return -1;
+  }
+
+  // Send the actual message
+  int bytes_sent_msg = send_message(client_sock, message.c_str(), message.size(), 0);
+  if (bytes_sent_msg <= 0 || (size_t)bytes_sent_msg != message.size()) {
+      SPDLOG_ERROR("Failed to send full message body to client {}. Sent: {} (expected {}). Disconnecting.",
+                   client_sock, bytes_sent_msg, message.size());
+      // handle_disconnect already called by send_message above if error/disconnect
+      return -1;
+  }
+  return bytes_sent_msg;
 }
 
 }
