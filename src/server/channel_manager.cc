@@ -20,7 +20,10 @@ namespace tt::chat::server {
         return result;
     }
 
-    void ChannelManager::join_channel(const std::string &name, int client_fd) {
+    void ChannelManager::join_channel(const std::string &name, const std::string &prev_channel, int client_fd) {
+        if(prev_channel != "") {
+            channels_[prev_channel].erase(client_fd);
+        }
         create_channel(name);
         channels_[name].insert(client_fd);
     }
