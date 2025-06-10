@@ -97,9 +97,13 @@ void EpollServer::handle_client_data(int client_sock) {
 }
 
 void EpollServer::parse_client_command(int client_sock, const std::string& msg){
-    if (msg.rfind("/name", 0) == 0 && msg.size() > 5 && std::isspace(msg[5])) {
-        handle_name_command(client_sock, msg);
-    } else if (msg.rfind("/create ", 0) == 0) {
+  if (msg.rfind("/name", 0) == 0 && msg.size() > 5 && std::isspace(msg[5])) {
+      handle_name_command(client_sock, msg);
+  } 
+  else if (msg.rfind("/name", 0) == 0) {
+    send_message(client_sock, "Username cannot be created.\n");
+  }
+  else if (msg.rfind("/create ", 0) == 0) {
     handle_create_command(client_sock, msg);
   } else if (msg.rfind("/join ", 0) == 0) {
     handle_join_command(client_sock, msg);
@@ -111,10 +115,12 @@ void EpollServer::parse_client_command(int client_sock, const std::string& msg){
     handle_sendfile_command(client_sock, msg);
   } else if (msg == "/users") {
     handle_users_command(client_sock);
-  } else if (msg.rfind("/msg ", 0) == 0) {
+  } else if (msg.rfind("/dm ", 0) == 0) {
     handle_private_msg_command(client_sock, msg);
-  } else {
+  } else if (msg.rfind("/message ", 0) == 0) {
     handle_channel_message(client_sock, msg);
+  } else {
+    send_message(client_sock, "Invalid Command.");
   }
 }
 
@@ -181,13 +187,14 @@ void EpollServer::handle_list_command(int client_sock) {
 void EpollServer::handle_help_command(int client_sock) {
   std::string help_text =
     "Available commands:\n"
-    "/list                 - List available channels\n"
+    "/list                - List available channels\n"
     "/create <name>       - Create a new channel\n"
     "/join <name>         - Join a channel\n"
     "/users               - List users in current channel\n"
-    "/msg @user <message> - Send a private message\n"
+    "/dm @user <message>  - Send a private message\n"
     "/sendfile <filename> - Upload file\n"
-    "/help                - Show this help message\n";
+    "/help                - Show this help message\n"
+    "/message <message>   - Send a message to channel\n";
   send_message(client_sock, help_text.c_str());
 }
 
@@ -243,7 +250,7 @@ void EpollServer::handle_channel_message(int client_sock, const std::string& msg
     return;
   }
 
-  std::string full_msg = "[" + ch + "] " + usernames_[client_sock] + ": " + msg;
+  std::string full_msg = "[" + ch + "] " + usernames_[client_sock] + ": " + msg.substr(9);
   broadcast_to_channel(ch, full_msg, client_sock);
 }
 
