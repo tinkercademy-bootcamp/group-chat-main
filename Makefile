@@ -73,15 +73,21 @@ print-vars:
 clean:
 	rm -rf $(BUILD_DIR)
 
+# you're supposed to run this exactly once
 .PHONY: setup-flamegraph
 setup-flamegraph:
 	mkdir -p external-tools/
 	if [ ! -d external-tools/FlameGraph ]; then git clone https://github.com/brendangregg/FlameGraph.git external-tools/FlameGraph; fi
 	chmod +x auto_profiler.sh
 	
+# run this to start server with flamegraph for $duration seconds
 .PHONY: flamegraph
 flamegraph: all
 	./auto_profiler.sh	
+
+.PHONY: stress
+stress: all
+	./auto_profiler.sh --auto
 
 # Include the .d makefiles. The - at the front suppresses the errors of missing
 # Makefiles. Initially, all the .d files will be missing, and we don't want those

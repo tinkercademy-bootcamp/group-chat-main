@@ -2,6 +2,7 @@
 external-tools/*
 profiling-data/*
 perf.*
+*.log
 
 # =====================
 # General 
