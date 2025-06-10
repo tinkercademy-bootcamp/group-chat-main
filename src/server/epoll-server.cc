@@ -60,7 +60,15 @@ void EpollServer::handle_new_connection() {
 }
 
 void EpollServer::assign_username(int client_sock, const std::string& desired_name) {
+  // Efficient duplicate username check using set
+  if (usernames_set_.count(desired_name)) {
+    std::string err = "Username already exists!\n";
+    send(client_sock, err.c_str(), err.size(), 0);
+    SPDLOG_WARN("Client {} tried to assign duplicate username '{}'", client_sock, desired_name);
+    return;
+  }
   usernames_[client_sock] = desired_name;
+  usernames_set_.insert(desired_name);
   std::string welcome = "Welcome, " + desired_name + "!\n";
   send(client_sock, welcome.c_str(), welcome.size(), 0);
   SPDLOG_INFO("Client {} assigned username '{}'", client_sock, desired_name);
@@ -87,6 +95,11 @@ void EpollServer::handle_client_data(int client_sock) {
       std::string ch = msg.substr(8);
       if(ch == "" || ch[0] == ' ' || ch[0] == '\t') {
         send(client_sock, "The channel name cannot be empty and cannot begin with a white space.\n", 71, 0);
+        return;
+      }
+      // Check for duplicate channel name
+      if (channel_mgr_->has_channel(ch)) {
+        send(client_sock, "Channel name already exists!\n", 29, 0);
         return;
       }
       channel_mgr_->create_channel(ch);
