@@ -1,12 +1,18 @@
-all: client server
+all: udp-client udp-server tcp-client tcp-server
 
-client: udp-test-client.cpp
-	g++ -o $@ $<
+udp-client: udp-test-client.cpp
+	g++ -o udp-client udp-test-client.cpp
 
-server: udp-test-server.cpp
-	g++ -o $@ $<
+udp-server: udp-test-server.cpp
+	g++ -o udp-server udp-test-server.cpp
+
+tcp-client: tcp-test-client.cpp
+	g++ -o tcp-client tcp-test-client.cpp
+
+tcp-server: tcp-test-server.cpp
+	g++ -o tcp-server tcp-test-server.cpp
 
 .PHONY: clean
 
 clean:
-	rm client server
+	rm udp-client udp-server tcp-client tcp-server *.log
