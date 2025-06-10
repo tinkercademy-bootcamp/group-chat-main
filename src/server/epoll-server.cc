@@ -226,7 +226,14 @@ void EpollServer::handle_private_msg_command(int client_sock, const std::string&
   size_t space_pos = msg.find(' ', 5);
   if (space_pos != std::string::npos) {
     std::string recipient = msg.substr(5, space_pos - 5);
-    std::string dm = "[DM] " + usernames_[client_sock] + ": " + msg.substr(space_pos + 1);
+    std::string uname;
+    if(usernames_.count(client_sock)) {
+      uname = usernames_[client_sock];
+    }
+    else {
+      uname = client_usernames_[client_sock];
+    }
+    std::string dm = "[DM] " + uname + ": " + msg.substr(space_pos + 1);
 
     int target_fd = -1;
     for (const auto& [fd, uname] : usernames_) {
@@ -249,8 +256,14 @@ void EpollServer::handle_channel_message(int client_sock, const std::string& msg
     send_message(client_sock, "You are not in a channel. Use /join first.\n");
     return;
   }
-
-  std::string full_msg = "[" + ch + "] " + usernames_[client_sock] + ": " + msg.substr(9);
+  std::string uname;
+  if(usernames_.count(client_sock)) {
+    uname = usernames_[client_sock];
+  }
+  else {
+    uname = client_usernames_[client_sock];
+  }
+  std::string full_msg = "[" + ch + "] " + uname + ": " + msg.substr(9);
   broadcast_to_channel(ch, full_msg, client_sock);
 }
 
