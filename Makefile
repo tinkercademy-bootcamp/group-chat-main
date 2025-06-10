@@ -1,5 +1,5 @@
 # Thanks to Job Vranish (https://spin.atomicobject.com/2016/08/26/makefile-c-projects/)
-
+SHELL := /bin/bash
 # define the C/C++ compiler to use
 CXX := g++
 
