@@ -64,7 +64,7 @@ bool TestClient::initialize_and_connect_() {
     return stats_.connection_successful;
 }
 
-void TestClient::perform_initial_setup_() {
+void TestClient::perform_initial_setup_0_() {
     if (!stats_.connection_successful || !actual_client_) return;
 
     try {
@@ -91,6 +91,26 @@ void TestClient::perform_initial_setup_() {
     }
 }
 
+void TestClient::perform_initial_setup_() {
+    if (!stats_.connection_successful || !actual_client_) return;
+
+    try {
+        // 1. Set username
+        std::string name_cmd = "/name TestUser" + std::to_string(client_id_);
+        actual_client_->send_message(name_cmd);
+        std::this_thread::sleep_for(std::chrono::milliseconds(20)); // Small delay
+        // 2. Join a common channel
+        if (!common_channel_name_param_.empty()) {
+            std::string join_cmd = "/join " + common_channel_name_param_;
+            actual_client_->send_message(join_cmd);
+            std::this_thread::sleep_for(std::chrono::milliseconds(20)); // Small delay
+        }
+        LOG_TEST_INFO(client_id_, "Initial setup commands sent.");
+    } catch (const std::runtime_error& e) {
+        stats_.error_message = "Initial setup send failed: " + std::string(e.what());
+        keep_running_ = false; // Stop the test if setup fails
+    }
+}
 void TestClient::execute_send_phase_() {
     if (!stats_.connection_successful || !actual_client_ || !keep_running_) return;
 
@@ -186,8 +206,12 @@ void TestClient::run_test() {
         stats_.total_run_duration = std::chrono::high_resolution_clock::now() - scenario_start_time;
         return; // Cannot proceed if connection failed
     }
-
-    perform_initial_setup_();
+    //for the first client, create the channel such that all clients can join it
+    if (client_id_ == 0 && !common_channel_name_param_.empty()) {
+        perform_initial_setup_0_();
+    } else {
+        perform_initial_setup_();
+    }
     if (!keep_running_) { // If initial setup failed
          stats_.total_run_duration = std::chrono::high_resolution_clock::now() - scenario_start_time;
          return;

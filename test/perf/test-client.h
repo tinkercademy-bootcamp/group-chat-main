@@ -59,6 +59,7 @@ private:
 
     bool initialize_and_connect_();
     void perform_initial_setup_();  // Sets name, creates and joins channel
+    void perform_initial_setup_0_();
     void execute_send_phase_();
     void execute_listen_phase_(); 
 };
