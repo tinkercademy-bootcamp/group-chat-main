@@ -81,7 +81,11 @@ setup-flamegraph:
 	
 .PHONY: flamegraph
 flamegraph: all
-	./auto_profiler.sh	
+	./auto_profiler.sh
+
+.PHONY: flamegraph-auto
+flamegraph-auto: all
+	./auto_profiler.sh --auto
 
 # Include the .d makefiles. The - at the front suppresses the errors of missing
 # Makefiles. Initially, all the .d files will be missing, and we don't want those
