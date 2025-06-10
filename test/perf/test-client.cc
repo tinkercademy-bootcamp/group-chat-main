@@ -9,8 +9,8 @@
 #include <string>
 #include <cstring>
 #include <unistd.h>
-#define LOG_TEST_INFO(client_id, msg) std::cout << "[Client " << client_id << " INFO] " << msg << std::endl
-#define LOG_TEST_ERROR(client_id, msg) std::cerr << "[Client " << client_id << " ERROR] " << msg << std::endl
+// #define // LOG_TEST_INFO(client_id, msg) std::cout << "[Client " << client_id << " INFO] " << msg << std::endl
+// #define // LOG_TEST_ERROR(client_id, msg) std::cerr << "[Client " << client_id << " ERROR] " << msg << std::endl
 
 namespace tt::chat::test {
 
@@ -74,7 +74,7 @@ bool TestClient::parse_test_message(const std::string& msg_str,
         out_send_timestamp = std::chrono::time_point<std::chrono::steady_clock>(std::chrono::nanoseconds(ts_ns));
         // The rest is payload
     } catch (const std::exception& e) {
-        // LOG_TEST_ERROR(-1, "Parse error: " << e.what() << " on msg: " << msg_str);
+        // // LOG_TEST_ERROR(-1, "Parse error: " << e.what() << " on msg: " << msg_str);
         return false; // Parsing failed
     }
     return true;
@@ -96,12 +96,12 @@ TestClient::TestClient(int id, const std::string& server_ip, int server_port, in
       total_test_clients_param_(total_test_clients) {
 
     stats_.client_id = id;
-    LOG_TEST_INFO(client_id_, "Constructed. Payload size: " << message_size_bytes_param_);
+    // LOG_TEST_INFO(client_id_, "Constructed. Payload size: " << message_size_bytes_param_);
   }
 
 
 TestClient::~TestClient() {
-    LOG_TEST_INFO(client_id_, "TestClient destructor called. keep_running_: " << keep_running_.load());
+    // LOG_TEST_INFO(client_id_, "TestClient destructor called. keep_running_: " << keep_running_.load());
     keep_running_ = false; // 1. Signal listener thread to stop.
 
     if (actual_client_ && actual_client_->get_socket_fd() != -1) {
@@ -113,7 +113,7 @@ TestClient::~TestClient() {
         // 3. Wait for the listener thread to actually finish its execution.
         listener_thread_.join();
     }
-    LOG_TEST_INFO(client_id_, "TestClient destroyed.");
+    // LOG_TEST_INFO(client_id_, "TestClient destroyed.");
 }
 
 bool TestClient::initialize_and_connect_() {
@@ -123,7 +123,7 @@ bool TestClient::initialize_and_connect_() {
             server_port_param_, server_ip_param_
         );
         stats_.connection_successful = true;
-        LOG_TEST_INFO(client_id_, "Connection successful.");
+        // LOG_TEST_INFO(client_id_, "Connection successful.");
     } catch (const std::runtime_error& e) {
         stats_.error_message = "Connection failed: " + std::string(e.what());
         stats_.connection_successful = false;
@@ -155,7 +155,7 @@ void TestClient::perform_initial_setup_0_() {
             actual_client_->send_message(join_cmd);
             std::this_thread::sleep_for(std::chrono::milliseconds(20)); // Small delay
         }
-        LOG_TEST_INFO(client_id_, "Initial setup commands sent.");
+        // LOG_TEST_INFO(client_id_, "Initial setup commands sent.");
     } catch (const std::runtime_error& e) {
         stats_.error_message = "Initial setup send failed: " + std::string(e.what());
         keep_running_ = false; // Stop the test if setup fails
@@ -176,7 +176,7 @@ void TestClient::perform_initial_setup_() {
             actual_client_->send_message(join_cmd);
             std::this_thread::sleep_for(std::chrono::milliseconds(20)); // Small delay
         }
-        LOG_TEST_INFO(client_id_, "Initial setup commands sent.");
+        // LOG_TEST_INFO(client_id_, "Initial setup commands sent.");
     } catch (const std::runtime_error& e) {
         stats_.error_message = "Initial setup send failed: " + std::string(e.what());
         keep_running_ = false; // Stop the test if setup fails
@@ -185,7 +185,7 @@ void TestClient::perform_initial_setup_() {
 void TestClient::execute_send_phase_() {
     if (!stats_.connection_successful || !actual_client_ || !keep_running_) return;
 
-    LOG_TEST_INFO(client_id_, "Starting send phase for " << num_messages_to_send_param_ << " messages.");
+    // LOG_TEST_INFO(client_id_, "Starting send phase for " << num_messages_to_send_param_ << " messages.");
     auto send_phase_start_time = std::chrono::steady_clock::now();
 
     for (int i = 0; i < num_messages_to_send_param_ && keep_running_; ++i) {
@@ -199,7 +199,7 @@ void TestClient::execute_send_phase_() {
         } catch (const std::runtime_error& e) {
             // ... (error handling) ...
             stats_.error_message = "Send phase: Send failed on message " + std::to_string(i) + ": " + std::string(e.what());
-            LOG_TEST_ERROR(client_id_, stats_.error_message);
+            // LOG_TEST_ERROR(client_id_, stats_.error_message);
             keep_running_ = false;
             break;
         }
@@ -209,8 +209,8 @@ void TestClient::execute_send_phase_() {
         }
     }
     stats_.send_phase_duration = std::chrono::steady_clock::now() - send_phase_start_time;
-    LOG_TEST_INFO(client_id_, "Send phase completed. Messages sent: " << stats_.messages_sent
-                               << ". Duration: " << stats_.send_phase_duration.count() << "s.");
+    // LOG_TEST_INFO(client_id_, "Send phase completed. Messages sent: " << stats_.messages_sent
+                            //    << ". Duration: " << stats_.send_phase_duration.count() << "s.");
 }
 
 void TestClient::execute_listen_phase_() {
@@ -219,7 +219,7 @@ void TestClient::execute_listen_phase_() {
     int socket_fd = actual_client_->get_socket_fd();
     if (socket_fd < 0) {
         stats_.error_message = "Listener: Invalid socket FD from actual_client.";
-        LOG_TEST_ERROR(client_id_, stats_.error_message);
+        // LOG_TEST_ERROR(client_id_, stats_.error_message);
         keep_running_ = false;
         return;
     }
@@ -229,9 +229,9 @@ void TestClient::execute_listen_phase_() {
     auto listener_start_time = std::chrono::steady_clock::now();
     std::string partial_message_buffer; // To handle messages split across TCP packets
 
-    LOG_TEST_INFO(client_id_, "Listener starting.");
+    // LOG_TEST_INFO(client_id_, "Listener starting.");
     while (keep_running_) {
-        LOG_TEST_INFO(client_id_, "Listener waiting for messages...");
+        // LOG_TEST_INFO(client_id_, "Listener waiting for messages...");
         ssize_t bytes_read = ::read(socket_fd, buffer, sizeof(buffer) - 1);
 
         if (!keep_running_ && bytes_read <=0) { // Check if told to stop (and) read is unblocked/errored
@@ -268,20 +268,20 @@ void TestClient::execute_listen_phase_() {
                         auto recv_timestamp = std::chrono::steady_clock::now();
                         auto latency = recv_timestamp - send_timestamp;
                         // stats_.latencies_ns.push_back(latency);
-                        LOG_TEST_INFO(client_id_, "Received test message from client " << sender_id
-                            << " with SEQ " << msg_seq << " at " << std::chrono::duration_cast<std::chrono::nanoseconds>(recv_timestamp.time_since_epoch()).count()
-                            << " ns, latency: " << std::chrono::duration_cast<std::chrono::nanoseconds>(latency).count()  << " ns");
+                        // LOG_TEST_INFO(client_id_, "Received test message from client " << sender_id
+                            // << " with SEQ " << msg_seq << " at " << std::chrono::duration_cast<std::chrono::nanoseconds>(recv_timestamp.time_since_epoch()).count()
+                            // << " ns, latency: " << std::chrono::duration_cast<std::chrono::nanoseconds>(latency).count()  << " ns");
                         auto latency_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(latency).count();
                         stats_.latencies_ns.push_back(std::chrono::nanoseconds(latency_ns));
                         // print latency_ns 
                         for (const auto& latency : stats_.latencies_ns) {
-                            LOG_TEST_INFO(client_id_, "Latency recorded: " << std::chrono::duration_cast<std::chrono::nanoseconds>(latency).count() << " ns");
+                            // // LOG_TEST_INFO(client_id_, "Latency recorded: " << std::chrono::duration_cast<std::chrono::nanoseconds>(latency).count() << " ns");
                         }
                     }
                 } else {
                     // It might be a server status message or a non-test chat message
                     // For this test, we might ignore them or count them separately
-                     // LOG_TEST_INFO(client_id_, "Received non-test message or parse error: " << current_msg_str.substr(0,100));
+                     // // LOG_TEST_INFO(client_id_, "Received non-test message or parse error: " << current_msg_str.substr(0,100));
                 }
                 msg_start_pos = msg_end_pos;
             }
@@ -298,9 +298,9 @@ void TestClient::execute_listen_phase_() {
                         auto recv_timestamp = std::chrono::steady_clock::now();
                         auto latency = recv_timestamp - send_timestamp;
                         stats_.latencies_ns.push_back(latency);
-                        LOG_TEST_INFO(client_id_, "Received test message from client " << sender_id
-                            << " with SEQ " << msg_seq << " at " << std::chrono::duration_cast<std::chrono::nanoseconds>(recv_timestamp.time_since_epoch()).count()
-                            << " ns, latency: " << std::chrono::duration_cast<std::chrono::nanoseconds>(latency).count() << " ns");
+                        // LOG_TEST_INFO(client_id_, "Received test message from client " << sender_id
+                            // << " with SEQ " << msg_seq << " at " << std::chrono::duration_cast<std::chrono::nanoseconds>(recv_timestamp.time_since_epoch()).count()
+                            // << " ns, latency: " << std::chrono::duration_cast<std::chrono::nanoseconds>(latency).count() << " ns");
                     }
                     partial_message_buffer.clear(); // Processed the whole buffer
                  } else {
@@ -314,7 +314,7 @@ void TestClient::execute_listen_phase_() {
 
 
         } else if (bytes_read == 0) { // Server closed connection
-            LOG_TEST_INFO(client_id_, "Listener: Server closed connection.");
+            // LOG_TEST_INFO(client_id_, "Listener: Server closed connection.");
             if (keep_running_) stats_.error_message = "Listener: Server closed connection unexpectedly.";
             keep_running_ = false;
             break;
@@ -325,7 +325,7 @@ void TestClient::execute_listen_phase_() {
 
             if (keep_running_) { // Only log error if we weren't expecting to stop
                 stats_.error_message = "Listener: Read error: " + std::string(strerror(errno));
-                LOG_TEST_ERROR(client_id_, stats_.error_message);
+                // LOG_TEST_ERROR(client_id_, stats_.error_message);
             }
             keep_running_ = false;
             break;
@@ -333,10 +333,10 @@ void TestClient::execute_listen_phase_() {
     }
     // print latencies collected so far
     for (const auto& latency : stats_.latencies_ns) {
-        LOG_TEST_INFO(client_id_, "Latency recorded: " << std::chrono::duration_cast<std::chrono::nanoseconds>(latency).count() << " ns");
+        // LOG_TEST_INFO(client_id_, "Latency recorded: " << std::chrono::duration_cast<std::chrono::nanoseconds>(latency).count() << " ns");
     }
     stats_.listen_phase_duration = std::chrono::steady_clock::now() - listener_start_time;
-    LOG_TEST_INFO(client_id_, "Listener exiting. Messages received: " << stats_.messages_received);
+    // LOG_TEST_INFO(client_id_, "Listener exiting. Messages received: " << stats_.messages_received);
 }
  
  

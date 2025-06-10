@@ -99,15 +99,15 @@ int main(int argc, char* argv[]) {
         sum_client_total_run_duration += stats.total_run_duration.count();
         total_relevant_messages_for_latency_agg += stats.relevant_messages_received_for_latency;
         if (listen_replies) { // Only collect latencies if clients were listening
-            std::cout << "Client " << stats.client_id << " Latencies: " << stats.latencies_ns.size() << std::endl;
+            // std::cout << "Client " << stats.client_id << " Latencies: " << stats.latencies_ns.size() << std::endl;
             
             all_latencies_collected_ns.insert(all_latencies_collected_ns.end(),
                                              stats.latencies_ns.begin(), stats.latencies_ns.end());
             // print all latencies collected so far
-            std::cout << "Client " << stats.client_id << " Collected Latencies (ns): ";
-            for (const auto& latency: all_latencies_collected_ns) {
-                std::cout << std::chrono::duration_cast<std::chrono::nanoseconds>(latency).count() << " ";
-            }
+            // std::cout << "Client " << stats.client_id << " Collected Latencies (ns): ";
+            // for (const auto& latency: all_latencies_collected_ns) {
+            //     std::cout << std::chrono::duration_cast<std::chrono::nanoseconds>(latency).count() << " ";
+            // }
         }
         if (!stats.error_message.empty()) {
             std::cout << "Client " << stats.client_id << " Error: " << stats.error_message << std::endl;
@@ -146,42 +146,46 @@ if (listen_replies && !all_latencies_collected_ns.empty()) {
 
         std::sort(all_latencies_collected_ns.begin(), all_latencies_collected_ns.end());
         //print all contents in all_latencies_collected_ns
-        std::cout << "Collected Latencies (ns): ";
-        for (const auto& lat : all_latencies_collected_ns) {
-            std::cout << lat.count() << " ";
-        }
+        // std::cout << "Collected Latencies (ns): ";
+        // for (const auto& lat : all_latencies_collected_ns) {
+        //     std::cout << std::chrono::duration_cast<std::chrono::nanoseconds>(lat).count() << " ";
+        // }
 
         double sum_latency_ns = 0;
         for (const auto& lat_ns : all_latencies_collected_ns) {
             sum_latency_ns += std::chrono::duration_cast<std::chrono::nanoseconds>(lat_ns).count();
+        
         }
         double avg_latency_ns = sum_latency_ns / all_latencies_collected_ns.size();
         double avg_latency_ms = avg_latency_ns / 1e6; // Convert ns to ms
 
-        double min_latency_ns = all_latencies_collected_ns.front().count();
-        double max_latency_ns = all_latencies_collected_ns.back().count();
+        double min_latency_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(all_latencies_collected_ns.front()).count();
+        double max_latency_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(all_latencies_collected_ns.back()).count();
 
         double median_latency_ns = 0;
         if (!all_latencies_collected_ns.empty()) {
             size_t mid = all_latencies_collected_ns.size() / 2;
             if (all_latencies_collected_ns.size() % 2 == 0) {
-                median_latency_ns = (all_latencies_collected_ns[mid - 1].count() + all_latencies_collected_ns[mid].count()) / 2.0;
-            } else {
-                median_latency_ns = all_latencies_collected_ns[mid].count();
+                median_latency_ns = (std::chrono::duration_cast<std::chrono::nanoseconds>(all_latencies_collected_ns[mid - 1]).count() + 
+                                std::chrono::duration_cast<std::chrono::nanoseconds>(all_latencies_collected_ns[mid]).count()) / 2.0;
+        } else {
+                median_latency_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(all_latencies_collected_ns[mid]).count();
             }
         }
 
         double p95_latency_ns = 0;
         if (!all_latencies_collected_ns.empty()) {
-            p95_latency_ns = all_latencies_collected_ns[static_cast<size_t>(all_latencies_collected_ns.size() * 0.95)].count();
-        }
+            p95_latency_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(
+            all_latencies_collected_ns[static_cast<size_t>(all_latencies_collected_ns.size() * 0.95)]).count();
+    }
         double p99_latency_ns = 0;
          if (!all_latencies_collected_ns.empty()) {
-            p99_latency_ns = all_latencies_collected_ns[static_cast<size_t>(std::min((size_t)(all_latencies_collected_ns.size() * 0.99), all_latencies_collected_ns.size()-1))].count();
-        }
+        p99_latency_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(
+            all_latencies_collected_ns[static_cast<size_t>(std::min((size_t)(all_latencies_collected_ns.size() * 0.99), 
+                                                                  all_latencies_collected_ns.size()-1))]).count();}
 
 
-        std::cout << std::fixed << std::setprecision(3); // For ms output
+        std::cout << std::fixed << std::setprecision(5); // For ms output
         std::cout << "Min Latency:    " << min_latency_ns / 1e6 << " ms (" << min_latency_ns << " ns)" << std::endl;
         std::cout << "Avg Latency:    " << avg_latency_ms << " ms (" << avg_latency_ns << " ns)" << std::endl;
         std::cout << "Median Latency: " << median_latency_ns / 1e6 << " ms (" << median_latency_ns << " ns)" << std::endl;
