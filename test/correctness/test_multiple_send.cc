@@ -4,6 +4,7 @@
 #include <thread>
 #include <chrono>
 #include <vector>
+#include <omp.h>
 
 #include "../../src/server/epoll-server.h"
 #include "../../src/client/chat-client.h"
@@ -125,6 +126,16 @@ protected:
   static constexpr int test_port_ = 8081; // Use different port for testing
 };
 
+
+TEST_F(MultipleSendTest, CheckSendReliability)
+{
+  clients.back().send_message("/create CheckSendReliability");
+  EXPECT_TRUE(wait_for_response(clients.size()-1, "Channel created"));
+  std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
+  #pragma omp parallel for schedule(dynamic)
+  
+}
 
 // Test runner
 int main(int argc, char** argv) {
