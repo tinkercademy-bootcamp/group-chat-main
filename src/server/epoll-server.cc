@@ -83,99 +83,113 @@ void EpollServer::handle_client_data(int client_sock) {
   }
 
   std::string msg(buffer, len);
-  if (msg.rfind("/name ", 0) == 0) {
-    assign_username(client_sock, msg.substr(6));
-  } else if (msg.rfind("/create ", 0) == 0) {
-    std::string ch = msg.substr(8);
-    if(ch == "" || ch[0] == ' ') {
-      send(client_sock, "The channel name cannot be empty and cannot begin with a white space.\n", 71, 0);
-      return;
+  if(msg[0] == '/') {
+    if (msg.rfind("/name ", 0) == 0) {
+      std::string name = msg.substr(6);
+      if(name == "" || name[0] == ' ' || name[0] == '\t') {
+        send(client_sock, "Username cannot be empty and cannot begin with a white space.\n", 63, 0);
+        return;
+      }
+      assign_username(client_sock, name);
+    } else if (msg.rfind("/create ", 0) == 0) {
+      std::string ch = msg.substr(8);
+      if(ch == "" || ch[0] == ' ' || ch[0] == '\t') {
+        send(client_sock, "The channel name cannot be empty and cannot begin with a white space.\n", 71, 0);
+        return;
+      }
+      // Check for duplicate channel name
+      if (channel_mgr_->has_channel(ch)) {
+        send(client_sock, "Channel name already exists!\n", 29, 0);
+        return;
+      }
+      channel_mgr_->create_channel(ch);
+      if(client_channels_.find(client_sock) != client_channels_.end()) {
+        channel_mgr_->join_channel(ch, client_channels_[client_sock], client_sock);
+      }
+      else {
+        channel_mgr_->join_channel(ch, "", client_sock);
+      }
+      client_channels_[client_sock] = ch;
+      send(client_sock, "Channel created.\n", 17, 0);
+    } else if (msg.rfind("/join ", 0) == 0) {
+      std::string ch = msg.substr(6);
+      if(ch == "" || ch[0] == ' ' || ch[0] == '\t') {
+        send(client_sock, "The channel name cannot be empty and cannot begin with a white space.\n", 71, 0);
+        return;
+      }
+      if (!channel_mgr_->has_channel(ch)) {
+        send(client_sock, "Channel not found.\n", 19, 0);
+        return;
+      }
+      if(client_channels_.find(client_sock) != client_channels_.end()) {
+        channel_mgr_->join_channel(ch, client_channels_[client_sock], client_sock);
+      }
+      else {
+        channel_mgr_->join_channel(ch, "", client_sock);
+      }
+      client_channels_[client_sock] = ch;
+      send(client_sock, "Joined channel.\n", 16, 0);
+    } else if (msg.rfind("/list", 0) == 0) {
+      auto list = channel_mgr_->list_channels();
+      std::string out = "Channels:\n";
+      for (auto &ch : list) out += "- " + ch + "\n";
+      send(client_sock, out.c_str(), out.size(), 0);
     }
-    // Check for duplicate channel name
-    if (channel_mgr_->has_channel(ch)) {
-      send(client_sock, "Channel name already exists!\n", 29, 0);
+      else if (msg == "/help") {
+      std::string help_text =
+          "Available commands:\n"
+          "/list                 - List available channels\n"
+          "/create <name>       - Create a new channel\n"
+          "/join <name>         - Join a channel\n"
+          "/users               - List users in current channel\n"
+          "/msg @user <message> - Send a private message\n"
+          "/sendfile <filename> - Upload file\n"
+          "/help                - Show this help message\n";
+      send(client_sock, help_text.c_str(), help_text.size(), 0);
+    } else if (msg.rfind("/sendfile ", 0) == 0) {
+      std::string filename = msg.substr(10);
+      std::ofstream file("uploads/" + filename, std::ios::binary);
+      char filebuf[1024];
+      ssize_t n;
+      while ((n = read(client_sock, filebuf, sizeof(filebuf))) > 0) {
+          file.write(filebuf, n);
+          if (n < 1024) break; // crude end-of-file logic
+      }
+      file.close();
+      send(client_sock, "Upload done\n", 12, 0);
       return;
-    }
-    channel_mgr_->create_channel(ch);
-    if(client_channels_.find(client_sock) != client_channels_.end()) {
-      channel_mgr_->join_channel(ch, client_channels_[client_sock], client_sock);
+    } else if (msg == "/users") {
+      std::string ch = client_channels_[client_sock];
+      std::string list = "Users in [" + ch + "]:\n";
+      for (int fd : channel_mgr_->get_members(ch)) {
+          list += "- " + usernames_[fd] + "\n";
+      }
+      send(client_sock, list.c_str(), list.size(), 0);
+      return;
+    } else if (msg.rfind("/msg ", 0) == 0) {
+      size_t space_pos = msg.find(' ', 5);
+      if (space_pos != std::string::npos) {
+          std::string recipient = msg.substr(5, space_pos - 5);
+          std::string dm = "[DM] " + usernames_[client_sock] + ": " + msg.substr(space_pos + 1);
+
+          int target_fd = -1;
+          for (const auto& [fd, uname] : usernames_) {
+              if (uname == recipient) {
+                  target_fd = fd;
+                  break;
+              }
+          }
+
+          if (target_fd != -1)
+              send(target_fd, dm.c_str(), dm.size(), 0);
+          else
+              send(client_sock, "User not found.\n", 17, 0);
+      }
+      return;
     }
     else {
-      channel_mgr_->join_channel(ch, "", client_sock);
+      send(client_sock, "Invalid command.\n", 18, 0);
     }
-    client_channels_[client_sock] = ch;
-    send(client_sock, "Channel created.\n", 17, 0);
-  } else if (msg.rfind("/join ", 0) == 0) {
-    std::string ch = msg.substr(6);
-    if (!channel_mgr_->has_channel(ch)) {
-      send(client_sock, "Channel not found.\n", 19, 0);
-      return;
-    }
-    if(client_channels_.find(client_sock) != client_channels_.end()) {
-      channel_mgr_->join_channel(ch, client_channels_[client_sock], client_sock);
-    }
-    else {
-      channel_mgr_->join_channel(ch, "", client_sock);
-    }
-    client_channels_[client_sock] = ch;
-    send(client_sock, "Joined channel.\n", 16, 0);
-  } else if (msg.rfind("/list", 0) == 0) {
-    auto list = channel_mgr_->list_channels();
-    std::string out = "Channels:\n";
-    for (auto &ch : list) out += "- " + ch + "\n";
-    send(client_sock, out.c_str(), out.size(), 0);
-  }
-    else if (msg == "/help") {
-    std::string help_text =
-        "Available commands:\n"
-        "/list                 - List available channels\n"
-        "/create <name>       - Create a new channel\n"
-        "/join <name>         - Join a channel\n"
-        "/users               - List users in current channel\n"
-        "/msg @user <message> - Send a private message\n"
-        "/sendfile <filename> - Upload file\n"
-        "/help                - Show this help message\n";
-    send(client_sock, help_text.c_str(), help_text.size(), 0);
-  } else if (msg.rfind("/sendfile ", 0) == 0) {
-    std::string filename = msg.substr(10);
-    std::ofstream file("uploads/" + filename, std::ios::binary);
-    char filebuf[1024];
-    ssize_t n;
-    while ((n = read(client_sock, filebuf, sizeof(filebuf))) > 0) {
-        file.write(filebuf, n);
-        if (n < 1024) break; // crude end-of-file logic
-    }
-    file.close();
-    send(client_sock, "Upload done\n", 12, 0);
-    return;
-  } else if (msg == "/users") {
-    std::string ch = client_channels_[client_sock];
-    std::string list = "Users in [" + ch + "]:\n";
-    for (int fd : channel_mgr_->get_members(ch)) {
-        list += "- " + usernames_[fd] + "\n";
-    }
-    send(client_sock, list.c_str(), list.size(), 0);
-    return;
-  } else if (msg.rfind("/msg ", 0) == 0) {
-    size_t space_pos = msg.find(' ', 5);
-    if (space_pos != std::string::npos) {
-        std::string recipient = msg.substr(5, space_pos - 5);
-        std::string dm = "[DM] " + usernames_[client_sock] + ": " + msg.substr(space_pos + 1);
-
-        int target_fd = -1;
-        for (const auto& [fd, uname] : usernames_) {
-            if (uname == recipient) {
-                target_fd = fd;
-                break;
-            }
-        }
-
-        if (target_fd != -1)
-            send(target_fd, dm.c_str(), dm.size(), 0);
-        else
-            send(client_sock, "User not found.\n", 17, 0);
-    }
-    return;
   } else {
     std::string user = usernames_[client_sock];
     std::string ch = client_channels_[client_sock];
