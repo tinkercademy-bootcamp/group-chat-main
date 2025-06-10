@@ -1,6 +1,9 @@
 #include <iostream>
 #include "test-client.h"
-
+#include <vector>
+#include <memory>
+#include <string>
+#include <chrono>
 void print_usage(const char* prog_name) {
     std::cerr << "Usage: " << prog_name << " <server_ip> <server_port> <num_clients> "
               << "<messages_per_client> <message_size_bytes> [listen_replies (0 or 1)] [think_time_ms (0+)] [channel_name]" << std::endl;
@@ -42,7 +45,42 @@ int main(int argc, char* argv[]) {
     }
     if (think_time_ms < 0) think_time_ms = 0;
 
-    //
+    std::vector<std::unique_ptr<tt::chat::test::TestClient>> clients_wrappers;
+    std::vector<std::thread> client_threads;
+    for (int i = 0; i < num_clients; ++i) {
+        clients_wrappers.emplace_back(std::make_unique<tt::chat::test::TestClient>(
+            i, server_ip, server_port, messages_per_client, message_size_bytes,
+            listen_replies, think_time_ms, channel_name
+        ));
+    }
+    for (auto& client_wrapper : clients_wrappers) {
+        client_threads.emplace_back(&tt::chat::test::TestClient::run_test, client_wrapper.get());
+    }
+    for (auto& thread : client_threads) {
+        if (thread.joinable()) {
+            thread.join();
+        }
+    }
+    std::cout << "All clients have completed their tests." << std::endl;
+    for (const auto& client_wrapper : clients_wrappers) {
+        const auto& stats = client_wrapper->get_stats();
+        std::cout << "Client " << stats.client_id << " Stats:" << std::endl;
+        std::cout << "  Messages Sent: " << stats.messages_sent << std::endl;
+        std::cout << "  Messages Received: " << stats.messages_received << std::endl;
+        std::cout << "  Bytes Sent: " << stats.bytes_sent << std::endl;
+        std::cout << "  Bytes Received: " << stats.bytes_received << std::endl;
+        std::cout << "  Connection Time: " 
+                  << std::chrono::duration_cast<std::chrono::milliseconds>(stats.connection_time_taken).count() 
+                  << " ms" << std::endl;
+        std::cout << "  Send Time: "
+                  << std::chrono::duration_cast<std::chrono::milliseconds>(stats.send_time_taken).count() 
+                  << " ms" << std::endl;
+        if (!stats.error_message.empty()) {
+            std::cerr << "  Error: " << stats.error_message << std::endl;
+        }
+    }
+    std::cout << "All clients have completed their tests." << std::endl;
+
 
     return 0;
 }
