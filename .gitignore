@@ -1,3 +1,4 @@
+*.out
 .clangd
 external-tools/*
 profiling-data/*
