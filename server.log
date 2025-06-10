@@ -1,0 +1,3 @@
+[2025-06-10 16:40:41.233] [server-logs] [info] [epoll-server.cc:274] Server started with epoll
+[2025-06-10 16:40:43.395] [server-logs] [info] [epoll-server.cc:57] New connection: user_6
+[2025-06-10 16:40:46.049] [server-logs] [info] [epoll-server.cc:84] Client 6 assigned username 'balaji'

@@ -53,8 +53,8 @@ void EpollServer::handle_new_connection() {
   ev.data.fd = client_sock;
   check_error(epoll_ctl(epoll_fd_, EPOLL_CTL_ADD, client_sock, &ev) < 0, "epoll_ctl client_sock");
 
-  client_usernames_[client_sock] = "user_" + std::to_string(client_sock);  // temporary username
-  SPDLOG_INFO("New connection: {}", client_usernames_[client_sock]);
+  usernames_[client_sock] = "user_" + std::to_string(client_sock);  // temporary username
+  SPDLOG_INFO("New connection: {}", usernames_[client_sock]);
 
 }
 
@@ -263,7 +263,7 @@ void EpollServer::broadcast_to_channel(const std::string &channel, const std::st
 }
 
 void EpollServer::broadcast_message(const std::string &message, int sender_fd) {
-  for (const auto &[fd, name] : client_usernames_) {
+  for (const auto &[fd, name] : usernames_) {
     if (fd != sender_fd) {
       send_message(fd, message.c_str());
     }

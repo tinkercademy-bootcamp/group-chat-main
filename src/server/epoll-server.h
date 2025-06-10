@@ -32,7 +32,7 @@ namespace tt::chat::server {
         std::map<int, std::string> buffers;
         std::map<int, int> length_remaining;
 
-        std::unordered_map<int, std::string> client_usernames_;
+        // std::unordered_map<int, std::string> client_usernames_;
         std::unordered_map<int, std::string> usernames_;
         std::unordered_set<std::string> username_set_;
         std::unique_ptr<ChannelManager> channel_mgr_;
