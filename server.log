@@ -1,6 +1,0 @@
-[2025-06-10 08:36:20.643] [server-logs] [info] [epoll-server.cc:267] Server started with epoll
-[2025-06-10 08:36:42.710] [server-logs] [info] [epoll-server.cc:57] New connection: user_6
-[2025-06-10 08:36:48.175] [server-logs] [info] [epoll-server.cc:84] Client 6 assigned username 'mayank'
-[2025-06-10 08:36:50.844] [server-logs] [info] [epoll-server.cc:84] Client 6 assigned username 'hii'
-[2025-06-10 08:37:02.538] [server-logs] [info] [epoll-server.cc:84] Client 6 assigned username 'hi'
-[2025-06-10 08:37:09.169] [server-logs] [info] [epoll-server.cc:84] Client 6 assigned username 'mayank'
