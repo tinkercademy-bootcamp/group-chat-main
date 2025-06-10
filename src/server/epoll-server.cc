@@ -64,7 +64,8 @@ void EpollServer::assign_username(int client_sock, const std::string& desired_na
   trimmed_name.erase(trimmed_name.find_last_not_of(" \t\n\r") + 1);
 
   if (trimmed_name.empty()) {
-    send_message(client_sock, "Username cannot be empty.\n");
+    send_message(client_sock, "Username cannot be created.\n");
+    SPDLOG_WARN("Client {} attempted to set an empty username.", client_sock);
     return;
   }
   if (username_set_.count(trimmed_name)) {
@@ -117,7 +118,15 @@ void EpollServer::parse_client_command(int client_sock, const std::string& msg){
 }
 
 void EpollServer::handle_name_command(int client_sock, const std::string& msg) {
-  assign_username(client_sock, msg.substr(6));
+  std::string name = msg.substr(6);
+  // Remove leading/trailing whitespace
+  name.erase(0, name.find_first_not_of(" \t\n\r"));
+  name.erase(name.find_last_not_of(" \t\n\r") + 1);
+  if (name.empty()) {
+    send_message(client_sock, "Username cannot be created.\n");
+    return;
+  }
+  assign_username(client_sock, name);
 }
 
 void EpollServer::handle_create_command(int client_sock, const std::string& msg) {
