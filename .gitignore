@@ -70,4 +70,5 @@ build/
 /.classpath
 /.project
 /.settings/
+/perf.*
 /.vscode/
