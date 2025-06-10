@@ -69,5 +69,5 @@ IDE Configuration Files
 /.settings/
 /perf.*
 
-.vscode/
+.vscode/**
 server.log
