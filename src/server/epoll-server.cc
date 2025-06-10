@@ -86,6 +86,50 @@ void EpollServer::assign_username(int client_sock, const std::string& desired_na
 
 void EpollServer::handle_client_data(int client_sock) {
   char buffer[1024];
+  if (length_remaining[client_sock] > 0) {
+    ssize_t len = 0;
+    do {
+      len = read(client_sock, buffer, sizeof(buffer));
+      if (len < 0) {
+        if (errno == EAGAIN || errno == EWOULDBLOCK) {
+          // No more data available
+          break;
+        } else {
+          SPDLOG_ERROR("Read error on client {}: {}", client_sock, strerror(errno));
+          disconnect_client(client_sock);
+          return;
+        }
+      }
+      if (len > 0) {
+        buffers[client_sock].append(buffer, len);
+        length_remaining[client_sock] -= len;
+      }
+    } while (len > 0 && length_remaining[client_sock] > 0);
+  } else {
+    ssize_t len = 0;
+    len = read(client_sock, buffer, sizeof(buffer));
+    if (len < 0) {
+      if (errno == EAGAIN || errno == EWOULDBLOCK) {
+        // No more data available
+        return;
+      } else {
+        SPDLOG_ERROR("Read error on client {}: {}", client_sock, strerror(errno));
+        disconnect_client(client_sock);
+        return;
+      }
+    }
+    if (len == 0) {
+      // Client disconnected
+      SPDLOG_INFO("Client {} disconnected", client_sock);
+      disconnect_client(client_sock);
+      return;
+    }
+    if (len > 0) {
+      length_remaining[client_sock] = buffer[3] + buffer[2] << 8 + buffer[1] << 16 + buffer[0] << 24;
+      buffers[client_sock].append(buffer+4, len-4);
+      
+    }
+  }
   ssize_t len = read(client_sock, buffer, sizeof(buffer));
   if (len <= 0) {
     // cleanup
