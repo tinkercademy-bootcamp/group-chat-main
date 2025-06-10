@@ -26,7 +26,6 @@ namespace tt::chat::server {
         int listen_sock_;
         int epoll_fd_;
 
-
         static constexpr int kBufferSize = 1024;
         static constexpr int kMaxEvents = 64;
 
@@ -35,6 +34,7 @@ namespace tt::chat::server {
 
         std::unordered_map<int, std::string> client_usernames_;
         std::unordered_map<int, std::string> usernames_;
+        std::unordered_set<std::string> username_set_;
         std::unique_ptr<ChannelManager> channel_mgr_;
         std::unordered_map<int, std::string> client_channels_;
 
