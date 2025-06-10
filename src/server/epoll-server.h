@@ -1,6 +1,7 @@
 #ifndef EPOLL_SERVER_H
 #define EPOLL_SERVER_H
 
+#include <map>
 #include <unordered_map>
 #include <unordered_set>
 #include <memory>
@@ -29,6 +30,8 @@ namespace tt::chat::server {
         static constexpr int kBufferSize = 1024;
         static constexpr int kMaxEvents = 64;
 
+        std::map<int, std::string> buffers;
+        std::map<int, int> length_remaining;
 
         std::unordered_map<int, std::string> client_usernames_;
         std::unordered_map<int, std::string> usernames_;
