@@ -1,6 +1,7 @@
 #ifndef EPOLL_SERVER_H
 #define EPOLL_SERVER_H
 
+#include <limits.h>
 #include <netinet/in.h>
 #include <sys/epoll.h>
 
@@ -8,7 +9,6 @@
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
-#include <limits.h>
 
 namespace tt::chat::server {
 
@@ -27,7 +27,7 @@ class EpollServer {
   int epoll_fd_;
 
   static constexpr int kBufferSize = 1024;
-  static constexpr int kMaxEvents = INT_MAX;
+  static constexpr int kMaxEvents = 20000;
 
   std::unordered_map<int, std::string> client_usernames_;
   std::unordered_map<int, std::string> usernames_;

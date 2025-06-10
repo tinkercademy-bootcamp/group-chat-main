@@ -83,7 +83,7 @@ setup-flamegraph:
 flamegraph: all
 	./auto_profiler.sh
 
-.PHONY: flamegraph-auto
+.PHONY: flamegraph-auto 
 flamegraph-auto: all
 	./auto_profiler.sh --auto
 
