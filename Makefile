@@ -75,7 +75,7 @@ clean:
 
 # you're supposed to run this exactly once
 .PHONY: setup-flamegraph
-setup-flamegraph:
+setup-flamegraph: all
 	mkdir -p external-tools/
 	if [ ! -d external-tools/FlameGraph ]; then git clone https://github.com/brendangregg/FlameGraph.git external-tools/FlameGraph; fi
 	chmod +x auto_profiler.sh
