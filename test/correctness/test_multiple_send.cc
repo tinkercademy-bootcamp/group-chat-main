@@ -150,7 +150,7 @@ TEST_F(MultipleSendTest, CheckSendReliability)
   {
     for(int j=0; j<MSG_PER_CLIENT; j++)
     {
-      std::string msg_str = "this ";
+      std::string msg_str = "/message this ";
       msg_str += std::to_string(i);
       msg_str += " ";
       msg_str += std::to_string(j);
