@@ -113,21 +113,10 @@ void EpollServer::handle_client_data(int client_sock) {
 
     std::vector<char> buffer(msg_length);
 
-    ssize_t total_received_msg = 0;
-    while (total_received_msg < msg_length) {
-        ssize_t received_bytes = recv(client_sock, buffer.data() + total_received_msg, msg_length - total_received_msg, 0);
-        if (received_bytes < 0) {
-            if (errno == EINTR) continue;
-            SPDLOG_ERROR("Error reading message body from client {}: {}. Disconnecting.", client_sock, strerror(errno));
-            return;
-        }
-        if (received_bytes == 0) {
-            SPDLOG_INFO("Client {} disconnected during message body read. Disconnecting.", client_sock);
-            return;
-        }
-        total_received_msg += received_bytes;
+    ssize_t received_bytes = recv(client_sock, buffer.data(), msg_length, 0);
+    if(received_bytes < msg_length) {
+      std::cout << received_bytes << " " << msg_length << "\n";
     }
-
     std::string msg(buffer.data(), msg_length); // Create string from the exact read bytes
     SPDLOG_INFO("Received from client {}: length={} message='{}'", client_sock, msg_length, msg);
 
@@ -187,7 +176,6 @@ void EpollServer::handle_create_command(int client_sock, const std::string& msg)
   // Remove leading/trailing whitespace
   ch.erase(0, ch.find_first_not_of(" \t\n\r"));
   ch.erase(ch.find_last_not_of(" \t\n\r") + 1);
-  std::cout << msg << " " << ch << "\n";
 
   if(ch.empty() || ch[0] == ' ') {
     send_message(client_sock, "The channel name cannot be empty and cannot begin with a white space.\n");
@@ -349,19 +337,19 @@ void EpollServer::run() {
 
 int EpollServer::send_message(int client_sock, const char* msg, size_t len, int flags) {
     size_t total_sent = 0;
-    while (total_sent < len) {
-        ssize_t sent = send(client_sock, msg + total_sent, len - total_sent, flags);
-        if (sent < 0) {
-            if (errno == EINTR) continue; 
-            SPDLOG_ERROR("Failed to send to client {}: {} (errno: {})", client_sock, strerror(errno), errno);
-            return -1;
-        }
-        if (sent == 0) { 
-            SPDLOG_WARN("Client {} disconnected during send (0 bytes sent). Disconnecting.", client_sock);
-            return 0;
-        }
-        total_sent += sent;
+    
+    ssize_t sent = send(client_sock, msg + total_sent, len - total_sent, flags);
+    if (sent < 0) {
+        if (errno == EINTR) return 0; 
+        SPDLOG_ERROR("Failed to send to client {}: {} (errno: {})", client_sock, strerror(errno), errno);
+        return -1;
     }
+    if (sent == 0) { 
+        SPDLOG_WARN("Client {} disconnected during send (0 bytes sent). Disconnecting.", client_sock);
+        return 0;
+    }
+    total_sent += sent;
+    
     return total_sent;
 }
 

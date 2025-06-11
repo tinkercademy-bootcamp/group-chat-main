@@ -15,22 +15,6 @@
 
 std::atomic<bool> g_client_running{true};
 
-ssize_t recv_all(int sock, char* buffer, size_t len, int flags) {
-    size_t total_received = 0;
-    while (total_received < len) {
-        ssize_t received = recv(sock, buffer + total_received, len - total_received, flags);
-        if (received < 0) {
-            if (errno == EINTR) continue;
-            return -1;
-        }
-        if (received == 0) {
-            return 0;
-        }
-        total_received += received;
-    }
-    return total_received;
-}
-
 void read_loop(int client_socket_fd) {
     spdlog::info("Read loop started for FD {}", client_socket_fd);
     if (client_socket_fd < 0) {
@@ -45,7 +29,7 @@ void read_loop(int client_socket_fd) {
         char len_buf[LENGTH_PREFIX_SIZE + 1];
         len_buf[LENGTH_PREFIX_SIZE] = '\0';
 
-        ssize_t n_len = recv_all(client_socket_fd, len_buf, LENGTH_PREFIX_SIZE, 0);
+        ssize_t n_len = recv(client_socket_fd, len_buf, LENGTH_PREFIX_SIZE, 0);
 
         if (!g_client_running) { 
             break;
@@ -67,7 +51,7 @@ void read_loop(int client_socket_fd) {
 
         std::vector<char> buffer(msg_len);
 
-        ssize_t n_msg = recv_all(client_socket_fd, buffer.data(), msg_len, 0);
+        ssize_t n_msg = recv(client_socket_fd, buffer.data(), msg_len, 0);
 
         if (!g_client_running) {
             break;
