@@ -1,5 +1,5 @@
 # Thanks to Job Vranish (https://spin.atomicobject.com/2016/08/26/makefile-c-projects/)
-
+SHELL := /bin/bash
 # define the C/C++ compiler to use
 CXX := g++
 
@@ -8,8 +8,9 @@ CXXFLAGS :=-std=c++20 -Wall -Wextra -pedantic -fsanitize=address
 
 CXX_DEBUG_FLAGS :=-g3 -ggdb3
 CXX_RELEASE_FLAGS :=-O3
-CXXFLAGS += -O0 -g -fno-omit-frame-pointer -DIO_URING_ENABLED
 
+# PASS -DIO_URING_ENABLED to use IO_URING instead of EPOLL
+CXXFLAGS += -O0 -g -fno-omit-frame-pointer -DIO_URING_ENABLED
 
 CXXFLAGS += $(CXX_DEBUG_FLAGS)
 
@@ -74,7 +75,7 @@ clean:
 	rm -rf $(BUILD_DIR)
 
 .PHONY: setup-flamegraph
-setup-flamegraph:
+setup-flamegraph: all
 	mkdir -p external-tools/
 	if [ ! -d external-tools/FlameGraph ]; then git clone https://github.com/brendangregg/FlameGraph.git external-tools/FlameGraph; fi
 	chmod +x auto_profiler.sh
@@ -83,6 +84,10 @@ setup-flamegraph:
 flamegraph: all
 	./auto_profiler.sh	
 
+.PHONY: stress
+stress: all
+	./auto_profiler.sh --auto
+	
 # Include the .d makefiles. The - at the front suppresses the errors of missing
 # Makefiles. Initially, all the .d files will be missing, and we don't want those
 # errors to show up.
