@@ -25,7 +25,7 @@ void split_message(const std::string& msg,std::string& msg_type,std::string& msg
       return;
     }
 
-    msg_content=msg.substr(first_content_character_substring,
+    msg_content=command_args.substr(first_content_character_substring,
                 last_content_character_substring-first_content_character_substring+1);
 }
 EpollServer::EpollServer(int port) {
@@ -128,9 +128,8 @@ void EpollServer::parse_client_command(int client_sock, const std::string& msg){
     handle_sendfile_command(client_sock, msg_content);
   } else if (msg_type == "/users") {
     handle_users_command(client_sock);
-  } else if (msg_type=="/msg") {
-    handle_private_msg_command(client_sock, msg_content);
-  } else if(msg_type=="/message"){
+  }
+   else if(msg_type=="/message"){
     //handle_channel_message(client_sock, msg);
   }
   //add command for message also
@@ -204,27 +203,6 @@ void EpollServer::handle_users_command(int client_sock) {
         list += "- " + usernames_[fd] + "\n";
   }
   send_message(client_sock, list.c_str());
-}
-
-void EpollServer::handle_private_msg_command(int client_sock, const std::string& msg) {
-  size_t space_pos = msg.find(' ', 5);
-  if (space_pos != std::string::npos) {
-    std::string recipient = msg.substr(5, space_pos - 5);
-    std::string dm = "[DM] " + usernames_[client_sock] + ": " + msg.substr(space_pos + 1);
-
-    int target_fd = -1;
-    for (const auto& [fd, uname] : usernames_) {
-      if (uname == recipient) {
-        target_fd = fd;
-        break;
-      }
-    }
-
-    if (target_fd != -1)
-      send_message(target_fd, dm.c_str());
-    else
-      send_message(client_sock, "User not found.\n");
-  }
 }
 
 void EpollServer::handle_channel_message(int client_sock, const std::string& msg) {
