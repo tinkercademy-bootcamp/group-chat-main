@@ -6,6 +6,7 @@
 
 #include <spdlog/spdlog.h>
 #include <fstream>
+#include<string>
 
 namespace tt::chat::server {
 
@@ -78,15 +79,15 @@ void EpollServer::handle_new_connection() {
   ev.data.fd = client_sock;
   check_error(epoll_ctl(epoll_fd_, EPOLL_CTL_ADD, client_sock, &ev) < 0, "epoll_ctl client_sock");
 
-  client_usernames_[client_sock] = "user_" + std::to_string(client_sock);  // temporary username
+  client_usernames_[client_sock] = fmt::format("user_{}", client_sock); // temporary username
   SPDLOG_INFO("New connection: {}", client_usernames_[client_sock]);
 
 }
 
 void EpollServer::assign_username(int client_sock, const std::string& desired_name) {
   usernames_[client_sock] = desired_name;
-  std::string welcome = "Welcome, " + desired_name + "!\n";
-  send_message(client_sock, welcome.c_str(), welcome.size(), 0);
+  std::string welcome = fmt::format("Welcome, {}!\n", desired_name);
+  send_message(client_sock, welcome, welcome.size(), 0);
   SPDLOG_INFO("Client {} assigned username '{}'", client_sock, desired_name);
   }
 
@@ -165,7 +166,7 @@ void EpollServer::handle_list_command(int client_sock) {
   auto list = channel_mgr_->list_channels();
   std::string out = "Channels:\n";
   for (auto &ch : list) out += "- " + ch + "\n";
-  send_message(client_sock, out.c_str());
+  send_message(client_sock, out);
 }
 
 void EpollServer::handle_help_command(int client_sock) {
@@ -178,7 +179,7 @@ void EpollServer::handle_help_command(int client_sock) {
     "/msg @user <message> - Send a private message\n"
     "/sendfile <filename> - Upload file\n"
     "/help                - Show this help message\n";
-  send_message(client_sock, help_text.c_str());
+  send_message(client_sock, help_text);
 }
 
 void EpollServer::handle_sendfile_command(int client_sock, const std::string& msg) {
@@ -196,18 +197,18 @@ void EpollServer::handle_sendfile_command(int client_sock, const std::string& ms
 
 void EpollServer::handle_users_command(int client_sock) {
   std::string ch = client_channels_[client_sock];
-  std::string list = "Users in [" + ch + "]:\n";
+  std::string list = fmt::format("Users in [{}]:\n",ch);
   for (int fd : channel_mgr_->get_members(ch)) {
       list += "- " + usernames_[fd] + "\n";
   }
-  send_message(client_sock, list.c_str());
+  send_message(client_sock, list);
 }
 
 void EpollServer::handle_private_msg_command(int client_sock, const std::string& msg) {
   size_t space_pos = msg.find(' ', 5);
   if (space_pos != std::string::npos) {
     std::string recipient = msg.substr(5, space_pos - 5);
-    std::string dm = "[DM] " + usernames_[client_sock] + ": " + msg.substr(space_pos + 1);
+    std::string dm = fmt::format("[DM] {}: {}", usernames_[client_sock], msg.substr(space_pos + 1));
 
     int target_fd = -1;
     for (const auto& [fd, uname] : usernames_) {
@@ -218,7 +219,7 @@ void EpollServer::handle_private_msg_command(int client_sock, const std::string&
     }
 
     if (target_fd != -1)
-      send_message(target_fd, dm.c_str());
+      send_message(target_fd, dm);
     else
       send_message(client_sock, "User not found.\n");
   }
@@ -231,14 +232,14 @@ void EpollServer::handle_channel_message(int client_sock, const std::string& msg
     return;
   }
 
-  std::string full_msg = "[" + ch + "] " + usernames_[client_sock] + ": " + msg;
+  std::string full_msg = fmt::format("[{}] {}: {}", ch, usernames_[client_sock], msg);
   broadcast_to_channel(ch, full_msg, client_sock);
 }
 
 void EpollServer::broadcast_to_channel(const std::string &channel, const std::string &msg, int sender_fd) {
   for (int fd : channel_mgr_->get_members(channel)) {
     if (fd != sender_fd) {
-      send_message(fd, msg.c_str());
+      send_message(fd, msg);
     }
   }
 }
@@ -246,7 +247,7 @@ void EpollServer::broadcast_to_channel(const std::string &channel, const std::st
 void EpollServer::broadcast_message(const std::string &message, int sender_fd) {
   for (const auto &[fd, name] : client_usernames_) {
     if (fd != sender_fd) {
-      send_message(fd, message.c_str());
+      send_message(fd, message);
     }
   }
 }
@@ -264,8 +265,8 @@ void EpollServer::run() {
   #endif
 }
 
-int EpollServer::send_message(int client_sock, const char* msg, size_t len, int flags) {
-  ssize_t sent = send(client_sock, msg, len, flags);
+int EpollServer::send_message(int client_sock, const std::string& msg, size_t len, int flags) {
+  ssize_t sent = send(client_sock, msg.c_str(), len, flags);
   if (sent < 0) {
     SPDLOG_ERROR("Failed to send to client {}: {}", client_sock, strerror(errno));
     return -1;
@@ -273,7 +274,7 @@ int EpollServer::send_message(int client_sock, const char* msg, size_t len, int 
   return sent;
 }
 int EpollServer::send_message(int client_sock, const std::string& message) {
-  return send_message(client_sock, message.c_str(), message.size(), 0);
+  return send_message(client_sock, message, message.size(), 0);
 }
 
 } 
