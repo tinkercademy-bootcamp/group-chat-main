@@ -40,7 +40,6 @@ Thumbs.db
 *.exe
 *.out
 *.app
-chat_load_tester
 
 
 # Debugging and profiling
