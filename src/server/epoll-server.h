@@ -61,6 +61,7 @@ namespace tt::chat::server {
 
         std::unordered_map<int, std::string> client_usernames_;
         std::unordered_map<int, std::string> usernames_;
+        std::unordered_set<std::string> username_set_;
         std::unique_ptr<ChannelManager> channel_mgr_;
         std::unordered_map<int, std::string> client_channels_;
 
