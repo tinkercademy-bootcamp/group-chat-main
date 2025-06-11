@@ -254,9 +254,11 @@ void EpollServer::broadcast_message(const std::string &message, int sender_fd) {
 void EpollServer::run() {
   #ifdef IO_URING_ENABLED
   SPDLOG_INFO("Server started with IO_URING");
-    while(true){
-      handle_io_uring_events();
-    }
+  while (true) {
+    int ret = io_uring_submit_and_wait(&ring_, 1);
+    check_error(ret < 0, "io_uring_submit_and_wait failed");
+    handle_io_uring_events();
+  }
   #else
     SPDLOG_INFO("Server started with epoll");
     epoll_event events[kMaxEvents];
