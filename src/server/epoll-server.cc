@@ -154,7 +154,7 @@ void EpollServer::parse_client_command(int client_sock, const std::string& msg){
     handle_users_command(client_sock);
   } else if (msg.rfind("/bigmsg ", 0) == 0) {
     std::string num = msg.substr(8);
-    std::string bmsg = "/message ";
+    std::string bmsg = "";
     int len = stoi(num);
     for(int i=0; i<len; i++) 
       bmsg += 'a';
@@ -228,7 +228,7 @@ void EpollServer::handle_users_command(int client_sock) {
   SPDLOG_INFO("Users in channel '{}' listed.",ch);
 }
 
-void EpollServer::handle_channel_message(int client_sock, const std::string& msg) {
+void EpollServer::handle_channel_message(int client_sock, const std::string& msg_content) {
   std::string ch = client_channels_[client_sock];
   if (ch.empty()) {
     send_message(client_sock, "You are not in a channel. Use /join first.\n");
@@ -242,7 +242,7 @@ void EpollServer::handle_channel_message(int client_sock, const std::string& msg
   else {
     uname = client_usernames_[client_sock];
   }
-  std::string full_msg = "[" + ch + "] " + uname + ": " + msg.substr(9);
+  std::string full_msg = "[" + ch + "] " + uname + ": " + msg_content;
   broadcast_to_channel(ch, full_msg, client_sock);
   SPDLOG_INFO("User {} sent message on channel '{}'",client_sock,ch);
 }
