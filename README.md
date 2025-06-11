@@ -19,9 +19,13 @@ epoll-chat/
 
 ```
 
-# Profiling and Stress Testing
+# Flamegraph and Perf
+!IMPORTANT
 Please take a moment to read the first 2 sections of [Flamegraphs] (https://www.brendangregg.com/flamegraphs.html)
  - On first run, use `make setup-flamegraph`. This will clone the FlameGraph repo.
- - For Stress Testing (including perf and client simulation), run `make stress`
-    - You can change the params of this stress test in auto_profiler.sh
  - To run flamegraph, use `make flamegraph`.
+
+
+ - It will start the server for 120 seconds. You can stress test it during this time.
+ - After 60 secs, it'll create profiling-data/flame.svg for you to look into the load profile. Open it in a web browser for better readability.
+ - You can customise this duration in auto_profiler.sh.
