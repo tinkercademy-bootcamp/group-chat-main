@@ -10,7 +10,7 @@ CXX_DEBUG_FLAGS :=-g3 -ggdb3
 CXX_RELEASE_FLAGS :=-O3
 
 # PASS -DIO_URING_ENABLED to use IO_URING instead of EPOLL
-CXXFLAGS += -O0 -g -fno-omit-frame-pointer # -DIO_URING_ENABLED
+CXXFLAGS += -O0 -g -fno-omit-frame-pointer -DIO_URING_ENABLED
 
 CXXFLAGS += $(CXX_DEBUG_FLAGS)
 
