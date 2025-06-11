@@ -8,8 +8,9 @@ CXXFLAGS :=-std=c++20 -Wall -Wextra -pedantic -fsanitize=address
 
 CXX_DEBUG_FLAGS :=-g3 -ggdb3
 CXX_RELEASE_FLAGS :=-O3
-CXXFLAGS += -O0 -g -fno-omit-frame-pointer 
 
+# PASS -DIO_URING_ENABLED to use IO_URING instead of EPOLL
+CXXFLAGS += -O0 -g -fno-omit-frame-pointer -DIO_URING_ENABLED
 
 CXXFLAGS += $(CXX_DEBUG_FLAGS)
 
@@ -18,7 +19,7 @@ CXXFLAGS += $(CXX_DEBUG_FLAGS)
 # The linker flags. These are passed to the linker when we link our object files together.
 LDFLAGS := -fsanitize=address
 
-LIBS:= fmt spdlog
+LIBS:= fmt spdlog uring
 LIB_FLAGS := $(addprefix -l,$(LIBS))
 LDFLAGS += $(LIB_FLAGS) -pthread
 
