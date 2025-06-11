@@ -246,7 +246,9 @@ void EpollServer::handle_users_command(int client_sock) {
   std::string ch = client_channels_[client_sock];
   std::string list = "Users in [" + ch + "]:\n";
   for (int fd : channel_mgr_->get_members(ch)) {
-      list += "- " + usernames_[fd] + "\n";
+      // Only show users with assigned usernames
+      if (usernames_.count(fd))
+        list += "- " + usernames_[fd] + "\n";
   }
   send_message(client_sock, list.c_str());
   SPDLOG_INFO("Users in channel '{}' listed.",ch);
