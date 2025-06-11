@@ -24,7 +24,6 @@ void split_message(const std::string& msg,std::string& msg_type,std::string& msg
       msg_content="";
       return;
     }
-
     msg_content=command_args.substr(first_content_character_substring,
                 last_content_character_substring-first_content_character_substring+1);
 }
@@ -78,7 +77,6 @@ void EpollServer::handle_new_connection() {
 
 void EpollServer::handle_name_command(int client_sock, const std::string& desired_name) {
   std::string trimmed_name = desired_name;
-
   if (trimmed_name.empty()) {
     send_message(client_sock, "Username cannot be created.\n");
     SPDLOG_WARN("Client {} attempted to set an empty username.", client_sock);
@@ -128,13 +126,15 @@ void EpollServer::parse_client_command(int client_sock, const std::string& msg){
     handle_users_command(client_sock);
   }
    else if(msg_type=="/message"){
-    //handle_channel_message(client_sock, msg);
+    handle_channel_message(client_sock, msg_content);
   }
-  //add command for message also
+  else{
+    send_message(client_sock, "Invalid Command.\n");
+    SPDLOG_WARN("Client {} entered an invalid command.", client_sock);
+  }
 }
 
 void EpollServer::handle_create_command(int client_sock, const std::string& new_channel_name) {
-  std::cout<<new_channel_name<<std::endl;
   if(new_channel_name.empty()) {
     send_message(client_sock, "Empty channel names are not allowed.\n");
     SPDLOG_WARN("Client {} attempted to create an empty channel name.", client_sock);
@@ -180,6 +180,7 @@ void EpollServer::handle_list_command(int client_sock) {
 }
 
 void EpollServer::handle_users_command(int client_sock) {
+  // "/users non_empty" will not throw an error
   std::string ch = client_channels_[client_sock];
   std::string list = "Users in [" + ch + "]:\n";
   for (int fd : channel_mgr_->get_members(ch)) {
