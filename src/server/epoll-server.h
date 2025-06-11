@@ -49,8 +49,6 @@ namespace tt::chat::server {
         void handle_create_command(int client_sock, const std::string& msg);
         void handle_join_command(int client_sock, const std::string& msg);
         void handle_list_command(int client_sock);
-        void handle_help_command(int client_sock);
-        void handle_sendfile_command(int client_sock, const std::string& msg);
         void handle_users_command(int client_sock);
         void handle_channel_message(int client_sock, const std::string& msg);
 
