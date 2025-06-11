@@ -1,7 +1,9 @@
+*.out
 .clangd
 external-tools/*
 profiling-data/*
 perf.*
+*.log
 
 # =====================
 # General 
@@ -38,6 +40,7 @@ Thumbs.db
 *.exe
 *.out
 *.app
+
 
 # Debugging and profiling
 *.gcda

@@ -14,9 +14,7 @@ namespace tt::chat {
     if (test) {
       SPDLOG_ERROR("{}", error_message);
       throw std::runtime_error(error_message);
-    }
-  }
-
+    }  }
 } // namespace tt::chat
 
 #endif // UTILS_H
