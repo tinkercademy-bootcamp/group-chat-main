@@ -62,8 +62,13 @@ int main(int argc, char* argv[]) {
             listen_replies, think_time_ms, channel_name, total_test_clients_for_wrapper
         ));
     }
-    for (auto& client_wrapper : clients_wrappers) {
-        client_threads.emplace_back(&tt::chat::test::TestClient::run_test, client_wrapper.get());
+    
+
+    // Start all client test scenarios in threads
+    for (size_t i = 0; i < clients_wrappers.size(); ++i) {
+        client_threads.emplace_back(&tt::chat::test::TestClient::run_test, clients_wrappers[i].get());
+        // Small stagger to avoid thundering herd on connect, optional
+        if (num_clients > 20 && i < clients_wrappers.size() -1) std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
 
     for (auto& thread : client_threads) {
