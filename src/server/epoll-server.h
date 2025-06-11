@@ -39,7 +39,6 @@ namespace tt::chat::server {
         void handle_client_data(int client_sock);
         void parse_client_command(int client_sock, const std::string& msg);
 
-        void assign_username(int client_sock, const std::string &desired_name);
         void disconnect_client(int client_sock);
 
         void broadcast_message(const std::string &message, int sender_fd);
@@ -50,10 +49,7 @@ namespace tt::chat::server {
         void handle_create_command(int client_sock, const std::string& msg);
         void handle_join_command(int client_sock, const std::string& msg);
         void handle_list_command(int client_sock);
-        void handle_help_command(int client_sock);
-        void handle_sendfile_command(int client_sock, const std::string& msg);
         void handle_users_command(int client_sock);
-        void handle_private_msg_command(int client_sock, const std::string& msg);
         void handle_channel_message(int client_sock, const std::string& msg);
 
     };
