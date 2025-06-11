@@ -30,23 +30,49 @@ void split_message(const std::string& msg,std::string& msg_type,std::string& msg
 EpollServer::EpollServer(int port) {
   setup_server_socket(port);
 
-  epoll_fd_ = epoll_create1(0);
-  check_error(epoll_fd_ < 0, "epoll_create1 failed");
+  #ifdef IO_URING_ENABLED
+    setup_io_uring();
+    submit_accept();
+  #else   
+    setup_epoll();
+    check_error(epoll_fd_ < 0, "epoll_create1 failed");
+    epoll_event ev{};
+    ev.events = EPOLLIN;
+    ev.data.fd = listen_sock_;
+    check_error(epoll_ctl(epoll_fd_, EPOLL_CTL_ADD, listen_sock_, &ev) < 0, "epoll_ctl listen_sock");
+  #endif
 
   // Initialize the ChannelManager
   channel_mgr_ = std::make_unique<ChannelManager>();
-
-  epoll_event ev{};
-  ev.events = EPOLLIN;
-  ev.data.fd = listen_sock_;
-  check_error(epoll_ctl(epoll_fd_, EPOLL_CTL_ADD, listen_sock_, &ev) < 0,
-              "epoll_ctl listen_sock");
 }
 
 EpollServer::~EpollServer() {
   close(listen_sock_);
-  close(epoll_fd_);
+  #ifdef IO_URING_ENABLED
+    io_uring_queue_exit(&ring_);
+  #else
+    close(epoll_fd_);
+  #endif
 }
+
+#ifndef IO_URING_ENABLED
+  void EpollServer::setup_epoll() {
+      epoll_fd_ = epoll_create1(0);
+  }
+  void EpollServer::handle_epoll_events(epoll_event events[]) {
+    while (true) {
+      int nfds = epoll_wait(epoll_fd_, events, kMaxEvents, -1);
+      for (int i = 0; i < nfds; ++i) {
+        int fd = events[i].data.fd;
+        if (fd == listen_sock_) {
+          handle_new_connection();
+        } else {
+          handle_client_data(fd);
+        }
+      }
+    }
+  }
+#endif
 
 void EpollServer::setup_server_socket(int port) {
   listen_sock_ = net::create_socket();
@@ -95,7 +121,7 @@ void EpollServer::handle_name_command(int client_sock, const std::string& new_na
   std::string welcome = "Welcome, " + new_name + "!\n";
   send_message(client_sock, welcome);
   SPDLOG_INFO("Client {} assigned username '{}'", client_sock, new_name);
-  }
+}
 
 void EpollServer::handle_client_data(int client_sock) {
     char len_buf[20 + 1]; // +1 for null terminator
@@ -220,9 +246,7 @@ void EpollServer::handle_users_command(int client_sock) {
   std::string ch = client_channels_[client_sock];
   std::string list = "Users in [" + ch + "]:\n";
   for (int fd : channel_mgr_->get_members(ch)) {
-      // Only show users with assigned usernames
-      if (usernames_.count(fd))
-        list += "- " + usernames_[fd] + "\n";
+      list += "- " + usernames_[fd] + "\n";
   }
   send_message(client_sock, list.c_str());
   SPDLOG_INFO("Users in channel '{}' listed.",ch);
@@ -256,20 +280,16 @@ void EpollServer::broadcast_to_channel(const std::string &channel, const std::st
 }
 
 void EpollServer::run() {
-  SPDLOG_INFO("Server started with epoll");
-  epoll_event events[kMaxEvents];
-
-  while (true) {
-    int nfds = epoll_wait(epoll_fd_, events, kMaxEvents, -1);
-    for (int i = 0; i < nfds; ++i) {
-      int fd = events[i].data.fd;
-      if (fd == listen_sock_) {
-        handle_new_connection();
-      } else {
-        handle_client_data(fd);
-      }
+  #ifdef IO_URING_ENABLED
+    SPDLOG_INFO("Server started with IO_URING");
+    while(true){
+      handle_io_uring_events();
     }
-  }
+  #else
+    SPDLOG_INFO("Server started with epoll");
+    epoll_event events[kMaxEvents];
+    handle_epoll_events(events);
+  #endif
 }
 
 int EpollServer::send_message(int client_sock, const char* msg, size_t len, int flags) {
