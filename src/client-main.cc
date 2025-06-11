@@ -11,51 +11,65 @@
 #include <sys/socket.h> 
 #include <errno.h>      
 
-#include "client/chat-client.h" // Assuming Client.h has send_message & get_socket_fd
+#include "client/chat-client.h"
 
 std::atomic<bool> g_client_running{true};
 
-
 void read_loop(int client_socket_fd) {
-    char buffer[2048];
     spdlog::info("Read loop started for FD {}", client_socket_fd);
-
     if (client_socket_fd < 0) {
         spdlog::error("Read loop received invalid socket FD. Terminating read loop.");
-        g_client_running = false; // Signal main loop to exit
+        g_client_running = false;
         return;
     }
 
+    const int LENGTH_PREFIX_SIZE = 20;
+
     while (g_client_running) {
-        ssize_t n = read(client_socket_fd, buffer, sizeof(buffer) - 1);
+        char len_buf[LENGTH_PREFIX_SIZE + 1];
+        len_buf[LENGTH_PREFIX_SIZE] = '\0';
 
-        if (!g_client_running) { // Check after read unblocks
+        ssize_t n_len = recv(client_socket_fd, len_buf, LENGTH_PREFIX_SIZE, 0);
+
+        if (!g_client_running) { 
+            break;
+        }
+        if (n_len <= 0) {
+            std::cout << "--- Server closed connection or read error on length ---" << std::endl;
+            if (n_len < 0) { 
+                std::cerr << "Read length error: " << strerror(errno) << std::endl;
+            }
+            g_client_running = false;
             break;
         }
 
-        if (n > 0) {
-            // Null-terminate the received data before printing
-            buffer[n] = '\0';
-            std::cout << buffer << std::endl;
-        } else if (n == 0) {
-            std::cout << "--- Server closed connection ---" << std::endl;
-            g_client_running = false; // Signal main loop to exit
-            break;
-        } else { // n < 0, read error
-            if (errno == EINTR && g_client_running) {
-                // Interrupted by a signal (e.g., SIGINT), but we're still running.
-                continue;
-            }
-            if (g_client_running) { // Only print error if not intentionally shutting down
-                std::cerr << "--- Read error: " << strerror(errno) << " ---" << std::endl;
-            }
-            g_client_running = false; // Signal main loop to exit
+        int msg_len = atoi(len_buf);
+        if (msg_len <= 0) {
+            spdlog::warn("Received invalid message length from server: '{}'. Skipping message.", len_buf);
+            continue; 
+        }
+
+        std::vector<char> buffer(msg_len);
+
+        ssize_t n_msg = recv(client_socket_fd, buffer.data(), msg_len, 0);
+
+        if (!g_client_running) {
             break;
         }
+        if (n_msg <= 0) {
+            std::cout << "--- Server closed connection or read error on message body ---" << std::endl;
+            if (n_msg < 0) { 
+                std::cerr << "Read message body error: " << strerror(errno) << std::endl;
+            }
+            g_client_running = false; 
+            break;
+        }
+
+        std::string received_msg(buffer.data(), msg_len);
+        std::cout << received_msg << std::endl;
     }
     spdlog::info("Read loop terminated for FD {}", client_socket_fd);
 }
-
 
 int main(int argc, char* argv[]) {
     // Basic command line argument parsing
