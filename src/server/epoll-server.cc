@@ -53,7 +53,7 @@ void EpollServer::handle_new_connection() {
   ev.data.fd = client_sock;
   check_error(epoll_ctl(epoll_fd_, EPOLL_CTL_ADD, client_sock, &ev) < 0, "epoll_ctl client_sock");
 
-  client_usernames_[client_sock] = "user_" + std::to_string(client_sock);  // temporary username
+  client_usernames_[client_sock] = fmt::format("user_{}", client_sock); // temporary username
   SPDLOG_INFO("New connection: {}", client_usernames_[client_sock]);
 
 }
@@ -79,7 +79,7 @@ void EpollServer::assign_username(int client_sock, const std::string& desired_na
   }
   usernames_[client_sock] = trimmed_name;
   username_set_.insert(trimmed_name);
-  std::string welcome = "Welcome, " + trimmed_name + "!\n";
+  std::string welcome = fmt::format("Welcome, {}!\n", trimmed_name);
   send_message(client_sock, welcome.c_str(), welcome.size(), 0);
   SPDLOG_INFO("Client {} assigned username '{}'", client_sock, trimmed_name);
   }
@@ -213,7 +213,8 @@ void EpollServer::handle_sendfile_command(int client_sock, const std::string& ms
 
 void EpollServer::handle_users_command(int client_sock) {
   std::string ch = client_channels_[client_sock];
-  std::string list = "Users in [" + ch + "]:\n";
+  // std::string list = "Users in [" + ch + "]:\n";
+  std::string list = fmt::format("Users in [{}]:\n",ch);
   for (int fd : channel_mgr_->get_members(ch)) {
       // Only show users with assigned usernames
       if (usernames_.count(fd))
@@ -226,7 +227,7 @@ void EpollServer::handle_private_msg_command(int client_sock, const std::string&
   size_t space_pos = msg.find(' ', 5);
   if (space_pos != std::string::npos) {
     std::string recipient = msg.substr(5, space_pos - 5);
-    std::string dm = "[DM] " + usernames_[client_sock] + ": " + msg.substr(space_pos + 1);
+    std::string dm = fmt::format("[DM] {}: {}", usernames_[client_sock], msg.substr(space_pos + 1));
 
     int target_fd = -1;
     for (const auto& [fd, uname] : usernames_) {
@@ -250,7 +251,7 @@ void EpollServer::handle_channel_message(int client_sock, const std::string& msg
     return;
   }
 
-  std::string full_msg = "[" + ch + "] " + usernames_[client_sock] + ": " + msg.substr(9);
+ std::string full_msg = fmt::format("[{}] {}: {}", ch, usernames_[client_sock], msg.substr(9));
   broadcast_to_channel(ch, full_msg, client_sock);
 }
 
