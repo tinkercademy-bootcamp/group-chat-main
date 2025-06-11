@@ -72,17 +72,15 @@ void EpollServer::handle_new_connection() {
 
   client_usernames_[client_sock] = "user_" + std::to_string(client_sock);  // temporary username
   SPDLOG_INFO("New connection: {}", client_usernames_[client_sock]);
-
 }
 
-void EpollServer::handle_name_command(int client_sock, const std::string& desired_name) {
-  std::string trimmed_name = desired_name;
-  if (trimmed_name.empty()) {
+void EpollServer::handle_name_command(int client_sock, const std::string& new_name) {
+  if (new_name.empty()) {
     send_message(client_sock, "Username cannot be created.\n");
     SPDLOG_WARN("Client {} attempted to set an empty username.", client_sock);
     return;
   }
-  if (username_set_.count(trimmed_name)) {
+  if (username_set_.count(new_name)) {
     send_message(client_sock, "Duplicate usernames are not allowed.\n");
     SPDLOG_WARN("Client {} attempted to duplicate a username.", client_sock);
     return;
@@ -91,11 +89,11 @@ void EpollServer::handle_name_command(int client_sock, const std::string& desire
   if (usernames_.count(client_sock)) {
     username_set_.erase(usernames_[client_sock]);
   }
-  usernames_[client_sock] = trimmed_name;
-  username_set_.insert(trimmed_name);
-  std::string welcome = "Welcome, " + trimmed_name + "!\n";
+  usernames_[client_sock] = new_name;
+  username_set_.insert(new_name);
+  std::string welcome = "Welcome, " + new_name + "!\n";
   send_message(client_sock, welcome.c_str(), welcome.size(), 0);
-  SPDLOG_INFO("Client {} assigned username '{}'", client_sock, trimmed_name);
+  SPDLOG_INFO("Client {} assigned username '{}'", client_sock, new_name);
   }
 
 void EpollServer::handle_client_data(int client_sock) {
@@ -154,12 +152,13 @@ void EpollServer::handle_create_command(int client_sock, const std::string& new_
   }
   client_channels_[client_sock] = new_channel_name;
   send_message(client_sock, "Channel created.\n");
-  SPDLOG_INFO("");
+  SPDLOG_INFO("Channel created.\n");
 }
 
 void EpollServer::handle_join_command(int client_sock, const std::string& new_channel_name) {
   if (!channel_mgr_->has_channel(new_channel_name)) {
     send_message(client_sock, "Channel not found.\n");
+    SPDLOG_WARN("Client {} attempted to join a nonexisting channel.", client_sock);
     return;
   }
   if(client_channels_.find(client_sock) != client_channels_.end()) {
@@ -170,6 +169,7 @@ void EpollServer::handle_join_command(int client_sock, const std::string& new_ch
   }
   client_channels_[client_sock] = new_channel_name;
   send_message(client_sock, "Joined channel.\n");
+  SPDLOG_INFO("Client {} joined channel '{}'.", client_sock, new_channel_name);
 }
 
 void EpollServer::handle_list_command(int client_sock) {
@@ -177,6 +177,7 @@ void EpollServer::handle_list_command(int client_sock) {
   std::string out = "Channels:\n";
   for (auto &ch : list) out += "- " + ch + "\n";
   send_message(client_sock, out.c_str());
+  SPDLOG_INFO("Channels listed.");
 }
 
 void EpollServer::handle_users_command(int client_sock) {
@@ -189,31 +190,26 @@ void EpollServer::handle_users_command(int client_sock) {
         list += "- " + usernames_[fd] + "\n";
   }
   send_message(client_sock, list.c_str());
+  SPDLOG_INFO("Users in channel '{}' listed.",ch);
 }
 
 void EpollServer::handle_channel_message(int client_sock, const std::string& msg) {
   std::string ch = client_channels_[client_sock];
   if (ch.empty()) {
     send_message(client_sock, "You are not in a channel. Use /join first.\n");
+    SPDLOG_WARN("User {} attempted to send a message without being in a channel",client_sock);
     return;
   }
 
   std::string full_msg = "[" + ch + "] " + usernames_[client_sock] + ": " + msg;
   broadcast_to_channel(ch, full_msg, client_sock);
+  SPDLOG_INFO("User {} sent message on channel '{}'",client_sock,ch);
 }
 
 void EpollServer::broadcast_to_channel(const std::string &channel, const std::string &msg, int sender_fd) {
   for (int fd : channel_mgr_->get_members(channel)) {
     if (fd != sender_fd) {
       send_message(fd, msg.c_str());
-    }
-  }
-}
-
-void EpollServer::broadcast_message(const std::string &message, int sender_fd) {
-  for (const auto &[fd, name] : client_usernames_) {
-    if (fd != sender_fd) {
-      send_message(fd, message.c_str());
     }
   }
 }
