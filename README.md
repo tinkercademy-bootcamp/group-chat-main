@@ -21,7 +21,7 @@ epoll-chat/
 
 # Profiling and Stress Testing
 Please take a moment to read the first 2 sections of [Flamegraphs] (https://www.brendangregg.com/flamegraphs.html)
- - On first run, use `make setup-flamegraph`. This will clone the FlameGraph repo.
+ - On first run, use `make setup-flamegraph`. This will clone the FlameGraph repo. Also make the test framework. goto test/ and run `make`.
  - For Stress Testing (including perf and client simulation), run `make stress`
     - You can change the params of this stress test in auto_profiler.sh
  - To run flamegraph, use `make flamegraph`.
