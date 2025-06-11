@@ -108,6 +108,22 @@ int main(int argc, char* argv[]) {
             break;
         }
 
+        if (input_line == "/help") {
+            std::cout <<
+                "Available commands:\n"
+                "/list                - List available channels\n"
+                "/create <name>       - Create a new channel\n"
+                "/join <name>         - Join a channel\n"
+                "/users               - List users in current channel\n"
+                "/dm @user <message>  - Send a private message\n"
+                "/sendfile <filename> - Upload file\n"
+                "/help                - Show this help message\n"
+                "/message <message>   - Send a message to channel\n"
+                "/quit                - Exit the chat client\n";
+            std::cout << "> " << std::flush;
+            continue;
+        }
+
         if (!input_line.empty()) {
             try {
                 chat_client_ptr->send_message(input_line);

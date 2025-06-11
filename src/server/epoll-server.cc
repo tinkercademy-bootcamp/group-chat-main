@@ -109,8 +109,6 @@ void EpollServer::parse_client_command(int client_sock, const std::string& msg){
     handle_join_command(client_sock, msg);
   } else if (msg.rfind("/list", 0) == 0) {
     handle_list_command(client_sock);
-  } else if (msg == "/help") {
-    handle_help_command(client_sock);
   } else if (msg.rfind("/sendfile ", 0) == 0) {
     handle_sendfile_command(client_sock, msg);
   } else if (msg == "/users") {
@@ -182,20 +180,6 @@ void EpollServer::handle_list_command(int client_sock) {
   std::string out = "Channels:\n";
   for (auto &ch : list) out += "- " + ch + "\n";
   send_message(client_sock, out.c_str());
-}
-
-void EpollServer::handle_help_command(int client_sock) {
-  std::string help_text =
-    "Available commands:\n"
-    "/list                - List available channels\n"
-    "/create <name>       - Create a new channel\n"
-    "/join <name>         - Join a channel\n"
-    "/users               - List users in current channel\n"
-    "/dm @user <message>  - Send a private message\n"
-    "/sendfile <filename> - Upload file\n"
-    "/help                - Show this help message\n"
-    "/message <message>   - Send a message to channel\n";
-  send_message(client_sock, help_text.c_str());
 }
 
 void EpollServer::handle_sendfile_command(int client_sock, const std::string& msg) {
