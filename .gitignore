@@ -1,10 +1,3 @@
-*.out
-.clangd
-external-tools/*
-profiling-data/*
-perf.*
-*.log
-
 # =====================
 # General 
 # =====================
@@ -48,10 +41,8 @@ Thumbs.db
 
 /bin/
 /build/
-build/
 /pkg/
 /vendor/
-/test/chat_load_tester
 *.test
 *.sum
 
@@ -73,5 +64,4 @@ build/
 /.classpath
 /.project
 /.settings/
-/perf.*
 /.vscode/
