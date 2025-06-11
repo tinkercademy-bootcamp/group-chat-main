@@ -96,10 +96,23 @@ void EpollServer::handle_client_data(int client_sock) {
   parse_client_command(client_sock, msg);
 }
 
-void EpollServer::parse_client_command(int client_sock, const std::string& msg){
-  if (msg.rfind("/name", 0) == 0 && msg.size() > 5 && std::isspace(msg[5])) {
+const std::string LATENCY_TEST_MESSAGE_PREFIX = "LATENCY_TEST_MSG::";
+
+void EpollServer::parse_client_command(int client_sock, const std::string& msg) {
+
+    if (msg.rfind(LATENCY_TEST_MESSAGE_PREFIX, 0) == 0) {
+        std::string current_channel = client_channels_[client_sock];
+        if (current_channel.empty()) {
+            SPDLOG_WARN("Client {} (test client?) sent latency message but not in a channel.", client_sock);
+            send_message(client_sock, "ERROR: Send failed. Not in a channel for test message.\n");
+            return;
+        }
+        broadcast_to_channel(current_channel, msg, client_sock);
+
+    } 
+  else if (msg.rfind("/name", 0) == 0 && msg.size() > 5 && std::isspace(msg[5])) {
       handle_name_command(client_sock, msg);
-  } 
+  }
   else if (msg.rfind("/name", 0) == 0) {
     send_message(client_sock, "Username cannot be created.\n");
   }
