@@ -1,8 +1,13 @@
 #include "chat-sockets.h"
 
 int tt::chat::net::create_socket() {
-    int sock = socket(AF_INET, SOCK_STREAM, 0);
-    tt::chat::check_error(sock < 0, "Socket creation error\n");
+    #ifdef UDP_ENABLED
+        int sock = socket(AF_INET, SOCK_DGRAM, 0);
+        tt::chat::check_error(sock < 0, "Socket creation error\n");
+    #else
+        int sock = socket(AF_INET, SOCK_STREAM, 0);
+        tt::chat::check_error(sock < 0, "Socket creation error\n");
+    #endif
     return sock;
 }
 

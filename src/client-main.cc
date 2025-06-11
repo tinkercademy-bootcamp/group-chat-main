@@ -15,10 +15,31 @@
 
 std::atomic<bool> g_client_running{true};
 
-
-void read_loop(int client_socket_fd) {
+#ifdef UDP_ENABLED
+void read_loop_udp(tt::chat::client::Client* client) {
     char buffer[2048];
-    spdlog::info("Read loop started for FD {}", client_socket_fd);
+    spdlog::info("UDP Read loop started");
+
+    while (g_client_running) {
+        try {
+            std::string message = client->receive_message();
+            if (!message.empty()) {
+                std::cout << message << std::endl;
+            }
+        } catch (const std::runtime_error& e) {
+            if (g_client_running) {
+                spdlog::error("UDP read error: {}", e.what());
+                g_client_running = false;
+            }
+            break;
+        }
+    }
+    spdlog::info("UDP Read loop terminated");
+}
+#else
+void read_loop_tcp(int client_socket_fd) {
+    char buffer[2048];
+    spdlog::info("TCP Read loop started for FD {}", client_socket_fd);
 
     if (client_socket_fd < 0) {
         spdlog::error("Read loop received invalid socket FD. Terminating read loop.");
@@ -34,7 +55,6 @@ void read_loop(int client_socket_fd) {
         }
 
         if (n > 0) {
-            // Null-terminate the received data before printing
             buffer[n] = '\0';
             std::cout << buffer << std::endl;
         } else if (n == 0) {
@@ -55,12 +75,13 @@ void read_loop(int client_socket_fd) {
     }
     spdlog::info("Read loop terminated for FD {}", client_socket_fd);
 }
+#endif
 
 
 int main(int argc, char* argv[]) {
     // Basic command line argument parsing
     std::string server_ip = "127.0.0.1";
-    int port = 8080;
+    int port = 8050;
 
     if (argc > 1) {
         server_ip = argv[1];
@@ -74,25 +95,42 @@ int main(int argc, char* argv[]) {
     }
 
     spdlog::set_level(spdlog::level::info);
-    spdlog::info("Command-line Chat Client starting to connect to {}:{}", server_ip, port);
+
+    #ifdef UDP_ENABLED
+        spdlog::info("UDP Chat Client starting to connect to {}:{}", server_ip, port);
+        std::cout << "Starting UDP Chat Client..." << std::endl;
+    #else
+        spdlog::info("TCP Chat Client starting to connect to {}:{}", server_ip, port);
+        std::cout << "Starting TCP Chat Client..." << std::endl;
+    #endif
+    std::cout<<"hello"<<std::endl;
 
     std::unique_ptr<tt::chat::client::Client> chat_client_ptr;
-    try {
-        chat_client_ptr = std::make_unique<tt::chat::client::Client>(port, server_ip);
-        std::cout << "Connected to server. Type messages or '/quit' to exit." << std::endl;
-    } catch (const std::runtime_error& e) {
-        spdlog::critical("Failed to create or connect client: {}", e.what());
-        std::cerr << "Error connecting to server: " << e.what() << std::endl;
-        return EXIT_FAILURE;
-    } catch (...) {
-        spdlog::critical("An unknown error occurred during client initialization.");
-        std::cerr << "An unknown error occurred during client initialization." << std::endl;
-        return EXIT_FAILURE;
-    }
+    std::cout<<"hello1"<<std::endl;
+    chat_client_ptr = std::make_unique<tt::chat::client::Client>(port, server_ip);
+    // try {
+    //     std::cout<<"hello2"<<std::endl;
+    //     std::cout << "Connected to server. Type messages or '/quit' to exit." << std::endl;
+    // } catch (const std::runtime_error& e) {
+    //     spdlog::critical("Failed to create or connect client: {}", e.what());
+    //     std::cerr << "Error connecting to server: " << e.what() << std::endl;
+    //     std::cout << "Caught runtime_error in main client: " << e.what() << std::endl;
+    //     std::cout<<"hello4"<<std::endl;
+    //     return EXIT_FAILURE;
+    // } catch (...) {
+    //     spdlog::critical("An unknown error occurred during client initialization.");
+    //     std::cerr << "An unknown error occurred during client initialization." << std::endl;
+    //     std::cout<<"hello3"<<std::endl;
+    //     return EXIT_FAILURE;
+    // }
+    std::cout<<"Hello again"<<std::endl;
 
-
-    int client_socket_fd = chat_client_ptr->get_socket_fd();
-    std::thread reader_thread(read_loop, client_socket_fd);
+    #ifdef UDP_ENABLED
+        std::thread reader_thread(read_loop_udp, chat_client_ptr.get());
+    #else
+        int client_socket_fd = chat_client_ptr->get_socket_fd();
+        std::thread reader_thread(read_loop_tcp, client_socket_fd);
+    #endif
 
     std::string input_line;
     std::cout << "> " << std::flush; // Initial prompt
@@ -130,14 +168,14 @@ int main(int argc, char* argv[]) {
     spdlog::info("Client main loop terminated. Initiating shutdown sequence...");
     g_client_running = false; // Ensure flag is definitely false for reader_thread
 
-    // Shutdown socket to unblock read() in reader_thread
-
+    #ifndef UDP_ENABLED
     if (client_socket_fd >= 0) {
         spdlog::debug("Shutting down socket FD {} for read/write.", client_socket_fd);
         if (shutdown(client_socket_fd, SHUT_RDWR) == -1 && errno != ENOTCONN) {
             spdlog::warn("Socket shutdown failed for FD {}: {}", client_socket_fd, strerror(errno));
         }
     }
+    #endif
 
     if (reader_thread.joinable()) {
         spdlog::debug("Joining reader thread...");
