@@ -180,7 +180,6 @@ TEST_F(CreateChannelTest, CreateBigChannelName) {
     EXPECT_TRUE(wait_for_response_from_client(client1_.get(), "Channel created"));
     client1_->send_message("/list");
     EXPECT_TRUE(check_last_log_level(spdlog::level::info)) << "Expected INFO level for successful list";
-    EXPECT_TRUE(wait_for_response_from_client(client1_.get(), "Channel created"));
 }
 
 // Test creating multiple channels

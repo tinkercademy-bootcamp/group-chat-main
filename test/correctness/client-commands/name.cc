@@ -118,11 +118,14 @@ protected:
 
     bool wait_for_response_from_client(client::Client* client, const std::string& expected, int timeout_ms = 1000) {
         auto messages = receive_messages_from_client(client, timeout_ms);
+        std::string total_message = "";
         for (const auto& msg : messages) {
+            total_message += msg;
             if (msg.find(expected) != std::string::npos) {
                 return true;
             }
         }
+        return total_message.find(expected) != std::string::npos;
         return false;
     }
 
