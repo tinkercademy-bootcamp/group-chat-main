@@ -253,7 +253,7 @@ void EpollServer::broadcast_message(const std::string &message, int sender_fd) {
 
 void EpollServer::run() {
   #ifdef IO_URING_ENABLED
-    SPDLOG_INFO("Server started with IO_URING");
+  SPDLOG_INFO("Server started with IO_URING");
     while(true){
       handle_io_uring_events();
     }
