@@ -190,7 +190,7 @@ TEST_F(ChangeNameTest, ChangeSameClientNameSame) {
   EXPECT_TRUE(wait_for_response("Welcome, TestUser!"));
 
   client1_->send_message("/name TestUser");
-  EXPECT_TRUE(check_last_log_level(spdlog::level::warn)) << "Expected INFO level for unsuccessful name creation";
+  EXPECT_TRUE(check_last_log_level(spdlog::level::warn)) << "Expected WARN level for unsuccessful name creation";
 }
 
 // Test changing two different client names (different)
