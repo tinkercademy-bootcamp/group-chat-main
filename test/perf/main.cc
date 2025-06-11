@@ -7,10 +7,56 @@
 #include <iomanip>
 #include <thread>
 #include <algorithm>
+#include <fstream>
+
 void print_usage(const char* prog_name) {
     std::cerr << "Usage: " << prog_name << " <server_ip> <server_port> <num_clients> "
               << "<messages_per_client> <message_size_bytes> [listen_replies (0 or 1)] [think_time_ms (0+)] [channel_name]" << std::endl;
     std::cerr << "Example: " << prog_name << " 127.0.0.1 8080 10 100 64 1 10 testchannel" << std::endl;
+}
+
+
+// Function to write a vector of std::chrono::duration<double> to a file
+void write_latencies_to_file(const std::vector<std::chrono::duration<double>>& latencies, const std::string& filename) {
+    // Open the file in append mode. If the file doesn't exist, it will be created.
+    // If you want to overwrite the file each time, remove std::ios_base::app.
+    // However, for collecting all client latencies into one file, append is usually correct.
+    std::ofstream outfile(filename, std::ios_base::app);
+
+    if (!outfile.is_open()) {
+        std::cerr << "Error: Could not open file " << filename << " for writing." << std::endl;
+        return;
+    }
+
+    // Apply fixed-point notation and set precision for floating-point numbers.
+    // std::fixed ensures no scientific notation (e.g., 1.23e+06).
+    // std::setprecision(3) ensures 3 digits after the decimal point.
+    // Adjust the precision (e.g., 6, 9) based on the level of detail you need for nanoseconds.
+    // For example, if your duration<double> is in seconds and you want nanosecond resolution, you'd need setprecision(9).
+    // If your duration<double> is already in nanoseconds and you want 3 decimal places of nanoseconds, setprecision(3) is fine.
+    outfile << std::fixed << std::setprecision(3);
+
+    // Iterate through the vector and write each duration's double value to a new line
+    for (const auto& duration : latencies) {
+        outfile << duration.count() << std::endl; // .count() extracts the double value
+    }
+
+    // Close the file stream
+    outfile.close();
+
+    // Optional: Print a confirmation message
+    // std::cout << "Latencies written to " << filename << std::endl;
+}
+
+// Function to clear file before writing (useful for new test runs)
+void clear_file(const std::string& filename) {
+    std::ofstream outfile(filename, std::ios_base::trunc); // std::ios_base::trunc clears the file
+    if (!outfile.is_open()) {
+        std::cerr << "Error: Could not open file " << filename << " for clearing." << std::endl;
+        return;
+    }
+    outfile.close();
+    std::cout << "File " << filename << " cleared." << std::endl;
 }
 
 int main(int argc, char* argv[]) {
@@ -139,6 +185,10 @@ int main(int argc, char* argv[]) {
     }
     // Note: `client_wrappers` unique_ptrs will go out of scope here, calling destructors
     // which will join any remaining listener_threads.
+
+    const std::string epoll_filename = "latencies_epoll.txt";
+    clear_file(epoll_filename);
+    write_latencies_to_file(all_latencies_collected_ns, epoll_filename);
 
 if (listen_replies && !all_latencies_collected_ns.empty()) {
         std::cout << "--- Latency Statistics (End-to-End, nanoseconds) ---" << std::endl;
