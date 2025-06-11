@@ -41,6 +41,7 @@ Thumbs.db
 *.out
 *.app
 
+
 # Debugging and profiling
 *.gcda
 *.gcno

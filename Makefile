@@ -8,7 +8,7 @@ CXXFLAGS :=-std=c++20 -Wall -Wextra -pedantic -fsanitize=address
 
 CXX_DEBUG_FLAGS :=-g3 -ggdb3
 CXX_RELEASE_FLAGS :=-O3
-CXXFLAGS += -O2 -g -fno-omit-frame-pointer 
+CXXFLAGS += -O0 -g -fno-omit-frame-pointer 
 
 
 CXXFLAGS += $(CXX_DEBUG_FLAGS)
@@ -49,7 +49,7 @@ INC_FLAGS := $(addprefix -I,$(INC_DIRS))
 # These files will have .d instead of .o as the output.
 CPPFLAGS := $(INC_FLAGS) -MMD -MP
 
-all: $(BUILD_DIR)/server $(BUILD_DIR)/client test
+all: $(BUILD_DIR)/server $(BUILD_DIR)/client
 	
 $(BUILD_DIR)/server: $(BUILD_DIR)/src/server-main.cc.o $(NON_MAIN_OBJS)
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(BUILD_DIR)/src/server-main.cc.o $(NON_MAIN_OBJS) -o $(BUILD_DIR)/server $(LDFLAGS)
@@ -73,14 +73,12 @@ print-vars:
 clean:
 	rm -rf $(BUILD_DIR)
 
-# you're supposed to run this exactly once
 .PHONY: setup-flamegraph
 setup-flamegraph: all
 	mkdir -p external-tools/
 	if [ ! -d external-tools/FlameGraph ]; then git clone https://github.com/brendangregg/FlameGraph.git external-tools/FlameGraph; fi
 	chmod +x auto_profiler.sh
 	
-# run this to start server with flamegraph for $duration seconds
 .PHONY: flamegraph
 flamegraph: all
 	./auto_profiler.sh	
@@ -88,12 +86,7 @@ flamegraph: all
 .PHONY: stress
 stress: all
 	./auto_profiler.sh --auto
-
-./test/chat_load_tester:
-	cd test && make && cd ..
-
-test: ./test/chat_load_tester
-
+	
 # Include the .d makefiles. The - at the front suppresses the errors of missing
 # Makefiles. Initially, all the .d files will be missing, and we don't want those
 # errors to show up.
