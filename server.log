@@ -1,0 +1,2 @@
+[2025-06-11 06:37:13.303] [server-logs] [info] [epoll-server.cc:258] Server started with epoll
+[2025-06-11 06:37:22.127] [server-logs] [info] [epoll-server.cc:57] New connection: user_6

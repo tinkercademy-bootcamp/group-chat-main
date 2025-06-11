@@ -13,11 +13,17 @@ tt::chat::client::Client::Client(int port, const std::string &server_address)
 }
 
 void tt::chat::client::Client::send_message(const std::string &message) {
-    ssize_t bytes_sent = send(socket_, message.c_str(), message.length(), 0);
+    std::string len = std::to_string(message.length());
+    while(len.size() < 20) len += '\0';
+
+    ssize_t bytes_sent = send(socket_, len.c_str(), len.length(), 0);
     if (bytes_sent < 0) {
         tt::chat::check_error(true, "Send failed on client socket.");
     }
-
+    bytes_sent = send(socket_, message.c_str(), message.length(), 0);
+    if (bytes_sent < 0) {
+        tt::chat::check_error(true, "Send failed on client socket.");
+    }
 }
 
 int tt::chat::client::Client::get_socket_fd() const {
