@@ -10,7 +10,7 @@
 
 namespace tt::chat::server {
 void split_message(const std::string& msg,std::string& msg_type,std::string& msg_content){
-    size_t first_whitespace = msg.find_first_of(" \t\r\f\v");
+    size_t first_whitespace = msg.find_first_of(" \t\r\f\v\n");
     if(first_whitespace==std::string::npos){
       msg_type=msg;
       msg_content="";
@@ -124,8 +124,6 @@ void EpollServer::parse_client_command(int client_sock, const std::string& msg){
     handle_join_command(client_sock, msg_content);
   } else if (msg_type=="/list") {
     handle_list_command(client_sock);
-  } else if (msg_type=="/sendfile") {
-    handle_sendfile_command(client_sock, msg_content);
   } else if (msg_type == "/users") {
     handle_users_command(client_sock);
   }
@@ -179,19 +177,6 @@ void EpollServer::handle_list_command(int client_sock) {
   std::string out = "Channels:\n";
   for (auto &ch : list) out += "- " + ch + "\n";
   send_message(client_sock, out.c_str());
-}
-
-void EpollServer::handle_sendfile_command(int client_sock, const std::string& msg) {
-  std::string filename = msg.substr(10);
-  std::ofstream file("uploads/" + filename, std::ios::binary);
-  char filebuf[1024];
-  ssize_t n;
-  while ((n = read(client_sock, filebuf, sizeof(filebuf))) > 0) {
-      file.write(filebuf, n);
-      if (n < 1024) break;
-  }
-  file.close();
-  send_message(client_sock, "Upload done\n");
 }
 
 void EpollServer::handle_users_command(int client_sock) {
