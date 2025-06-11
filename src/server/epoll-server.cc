@@ -250,7 +250,7 @@ void EpollServer::handle_private_msg_command(int client_sock, const std::string&
       uname = usernames_[client_sock];
     }
     else {
-      uname = client_usernames_[client_sock];
+      uname = "user_" + std::to_string(client_sock);
     }
     std::string dm = "[DM] " + uname + ": " + msg.substr(space_pos + 1);
 
