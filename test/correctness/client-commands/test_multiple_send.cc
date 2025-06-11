@@ -10,8 +10,8 @@
 
 using ::testing::HasSubstr;
 
-#include "../../src/server/epoll-server.h"
-#include "../../src/client/chat-client.h"
+#include "../../../src/server/epoll-server.h"
+#include "../../../src/client/chat-client.h"
 
 // Default values that can be overridden by command-line arguments
 int CLIENT_COUNT = 50;
