@@ -9,7 +9,7 @@
 #include <string>
 #include <cstring>
 #include <unistd.h>
-#define LOG_TEST_INFO(client_id, msg) std::cout << "[Client " << client_id << " INFO] " << msg << std::endl
+#define LOG_TEST_INFO(client_id, msg) 42
 #define LOG_TEST_ERROR(client_id, msg) std::cerr << "[Client " << client_id << " ERROR] " << msg << std::endl
 
 namespace tt::chat::test {

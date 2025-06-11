@@ -127,7 +127,7 @@ if __name__ == "__main__":
 
     # --- How to specify X-axis range for plotting AND DATA FILTERING ---
     # To filter and plot data only between 0 and 500 nanoseconds:
-    X_AXIS_RANGE = (0, 50)
+    X_AXIS_RANGE = (0, 0.1)
     # Set to None for auto-scaling and no data filtering based on x_lim
     # X_AXIS_RANGE = None
 

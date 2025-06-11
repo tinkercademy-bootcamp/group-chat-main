@@ -150,10 +150,10 @@ int main(int argc, char* argv[]) {
             all_latencies_collected_ns.insert(all_latencies_collected_ns.end(),
                                              stats.latencies_ns.begin(), stats.latencies_ns.end());
             // print all latencies collected so far
-            std::cout << "Client " << stats.client_id << " Collected Latencies (ns): ";
-            for (const auto& latency: all_latencies_collected_ns) {
-                std::cout << std::chrono::duration_cast<std::chrono::nanoseconds>(latency).count() << " ";
-            }
+            // std::cout << "Client " << stats.client_id << " Collected Latencies (ns): ";
+            // for (const auto& latency: all_latencies_collected_ns) {
+            //     std::cout << std::chrono::duration_cast<std::chrono::nanoseconds>(latency).count() << " ";
+            // }
         }
         if (!stats.error_message.empty()) {
             std::cout << "Client " << stats.client_id << " Error: " << stats.error_message << std::endl;
@@ -186,7 +186,7 @@ int main(int argc, char* argv[]) {
     // Note: `client_wrappers` unique_ptrs will go out of scope here, calling destructors
     // which will join any remaining listener_threads.
 
-    const std::string epoll_filename = "latencies_epoll.txt";
+    const std::string epoll_filename = "perf/values.txt";
     clear_file(epoll_filename);
     write_latencies_to_file(all_latencies_collected_ns, epoll_filename);
 
@@ -196,10 +196,10 @@ if (listen_replies && !all_latencies_collected_ns.empty()) {
 
         std::sort(all_latencies_collected_ns.begin(), all_latencies_collected_ns.end());
         //print all contents in all_latencies_collected_ns
-        std::cout << "Collected Latencies (ns): ";
-        for (const auto& lat : all_latencies_collected_ns) {
-            std::cout << lat.count() << " ";
-        }
+        // std::cout << "Collected Latencies (ns): ";
+        // for (const auto& lat : all_latencies_collected_ns) {
+        //     std::cout << lat.count() << " ";
+        // }
 
         double sum_latency_ns = 0;
         for (const auto& lat_ns : all_latencies_collected_ns) {

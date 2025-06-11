@@ -1,0 +1,72 @@
+
+---------------- Test Wrapper Summary ----------------
+Total actual test duration: 5.066 seconds
+Client 0 Latencies: 9400
+Client 1 Latencies: 0
+Client 2 Latencies: 0
+Client 3 Latencies: 9200
+Client 4 Latencies: 9199
+Client 5 Latencies: 9198
+Client 6 Latencies: 9200
+Client 7 Latencies: 9200
+Client 8 Latencies: 9200
+Client 9 Latencies: 9200
+Client 10 Latencies: 9200
+Client 11 Latencies: 9200
+Client 12 Latencies: 9200
+Client 13 Latencies: 9200
+Client 14 Latencies: 9200
+Client 15 Latencies: 9200
+Client 16 Latencies: 9200
+Client 17 Latencies: 9200
+Client 18 Latencies: 9200
+Client 19 Latencies: 9200
+Client 20 Latencies: 9200
+Client 21 Latencies: 9200
+Client 22 Latencies: 9200
+Client 23 Latencies: 9200
+Client 24 Latencies: 9200
+Client 25 Latencies: 9200
+Client 26 Latencies: 9200
+Client 27 Latencies: 9200
+Client 28 Latencies: 9200
+Client 29 Latencies: 9199
+Client 30 Latencies: 9200
+Client 31 Latencies: 9200
+Client 32 Latencies: 9200
+Client 33 Latencies: 9200
+Client 34 Latencies: 6950
+Client 35 Latencies: 9200
+Client 36 Latencies: 9200
+Client 37 Latencies: 9200
+Client 38 Latencies: 9200
+Client 39 Latencies: 9200
+Client 40 Latencies: 9199
+Client 41 Latencies: 9200
+Client 42 Latencies: 9200
+Client 43 Latencies: 9200
+Client 44 Latencies: 9200
+Client 45 Latencies: 9200
+Client 46 Latencies: 9199
+Client 47 Latencies: 6949
+Client 48 Latencies: 9200
+Client 49 Latencies: 9200
+Successful Connections: 50/50
+Aggregate Messages Sent: 10000
+Aggregate Bytes Sent: 1212500 (1.156 MB)
+Aggregate Messages Received: 446595
+Aggregate Bytes Received: 65724565 (62.680 MB)
+Overall Send Rate (across all clients, wall clock): 1973.942 msgs/sec
+Overall Send Data Rate: 233.731 KB/s
+Overall Receive Rate (across all clients, wall clock): 88155.267 msgs/sec
+Overall Receive Data Rate: 12669.579 KB/s
+File perf/values.txt cleared.
+--- Latency Statistics (End-to-End, nanoseconds) ---
+Total Relevant Messages for Latency Measurement: 437293
+Min Latency:    0.000 ms (0.000 ns)
+Avg Latency:    3316.967 ms (3316966802.804 ns)
+Median Latency: 0.000 ms (0.008 ns)
+P95 Latency:    0.000 ms (0.020 ns)
+P99 Latency:    0.000 ms (0.020 ns)
+Max Latency:    0.149 ms (149151.750 ns)
+--------------------------------------------------------
