@@ -1,0 +1,39 @@
+
+---------------- Test Wrapper Summary ----------------
+Total actual test duration: 27.225 seconds
+Client 68 Error: Listener: Read error: Connection reset by peer
+Client 69 Error: Listener: Read error: Connection reset by peer
+Client 70 Error: Listener: Read error: Connection reset by peer
+Client 72 Error: Listener: Read error: Connection reset by peer
+Client 73 Error: Listener: Read error: Connection reset by peer
+Client 94 Error: Listener: Read error: Connection reset by peer
+Client 95 Error: Listener: Read error: Connection reset by peer
+Client 96 Error: Listener: Read error: Connection reset by peer
+Client 98 Error: Listener: Read error: Connection reset by peer
+Client 102 Error: Listener: Read error: Connection reset by peer
+Client 103 Error: Listener: Read error: Connection reset by peer
+Client 104 Error: Listener: Read error: Connection reset by peer
+Client 106 Error: Listener: Read error: Connection reset by peer
+Client 114 Error: Listener: Read error: Connection reset by peer
+Client 120 Error: Listener: Read error: Connection reset by peer
+Client 121 Error: Listener: Read error: Connection reset by peer
+Client 123 Error: Listener: Read error: Connection reset by peer
+Client 124 Error: Listener: Read error: Connection reset by peer
+Successful Connections: 128/128
+Aggregate Messages Sent: 70692
+Aggregate Bytes Sent: 8688449 (8.286 MB)
+Aggregate Messages Received: 584203
+Aggregate Bytes Received: 79006076 (75.346 MB)
+Overall Send Rate (across all clients, wall clock): 2596.585 msgs/sec
+Overall Send Data Rate: 311.655 KB/s
+Overall Receive Rate (across all clients, wall clock): 21458.341 msgs/sec
+Overall Receive Data Rate: 2833.955 KB/s
+--- Latency Statistics (End-to-End, nanoseconds) ---
+Total Relevant Messages for Latency Measurement: 565730
+Min Latency:    0.42820 ms (428198.00000 ns)
+Avg Latency:    28673540.55372 ms (28673540553721.33984 ns)
+Median Latency: 4607.70332 ms (4607703319.00000 ns)
+P95 Latency:    16790.17357 ms (16790173573.00000 ns)
+P99 Latency:    1875918547.86511 ms (1875918547865110.00000 ns)
+Max Latency:    1875958176.06364 ms (1875958176063642.00000 ns)
+--------------------------------------------------------

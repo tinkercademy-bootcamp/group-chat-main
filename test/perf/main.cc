@@ -68,7 +68,8 @@ int main(int argc, char* argv[]) {
     for (size_t i = 0; i < clients_wrappers.size(); ++i) {
         client_threads.emplace_back(&tt::chat::test::TestClient::run_test, clients_wrappers[i].get());
         // Small stagger to avoid thundering herd on connect, optional
-        if (num_clients > 20 && i < clients_wrappers.size() -1) std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        if (num_clients > 30 && i < clients_wrappers.size() -1) std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        else if(num_clients > 50 && i < clients_wrappers.size() -1) std::this_thread::sleep_for(std::chrono::milliseconds(15));
     }
 
     for (auto& thread : client_threads) {

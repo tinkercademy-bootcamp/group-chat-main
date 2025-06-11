@@ -1,0 +1,21 @@
+
+---------------- Test Wrapper Summary ----------------
+Total actual test duration: 8.329 seconds
+Successful Connections: 64/64
+Aggregate Messages Sent: 40960
+Aggregate Bytes Sent: 5024640 (4.792 MB)
+Aggregate Messages Received: 287355
+Aggregate Bytes Received: 39438768 (37.612 MB)
+Overall Send Rate (across all clients, wall clock): 4917.750 msgs/sec
+Overall Send Data Rate: 589.130 KB/s
+Overall Receive Rate (across all clients, wall clock): 34500.488 msgs/sec
+Overall Receive Data Rate: 4624.128 KB/s
+--- Latency Statistics (End-to-End, nanoseconds) ---
+Total Relevant Messages for Latency Measurement: 277123
+Min Latency:    0.58502 ms (585021.00000 ns)
+Avg Latency:    37069069.12420 ms (37069069124198.14062 ns)
+Median Latency: 948.84799 ms (948847988.00000 ns)
+P95 Latency:    3844.66272 ms (3844662719.00000 ns)
+P99 Latency:    1875921600.30990 ms (1875921600309900.00000 ns)
+Max Latency:    1875928775.03922 ms (1875928775039222.00000 ns)
+--------------------------------------------------------

@@ -19,7 +19,7 @@ namespace tt::chat::server {
         ~EpollServer();
         void run();
         int send_message(int client_sock, const std::string& message);
-        int send_message(int client_sock, const char* msg, size_t len, int flags);
+        int send_message(int client_sock, const std::string& msg, size_t len, int flags);
 
     private:
         int listen_sock_;

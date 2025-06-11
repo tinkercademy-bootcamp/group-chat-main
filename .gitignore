@@ -1,7 +1,7 @@
 *.out
 .clangd
 external-tools/*
-profiling-data/*
+# profiling-data/*
 perf.*
 *.log
 

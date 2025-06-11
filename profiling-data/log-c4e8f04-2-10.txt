@@ -1,0 +1,13 @@
+
+---------------- Test Wrapper Summary ----------------
+Total actual test duration: 0.162 seconds
+Successful Connections: 2/2
+Aggregate Messages Sent: 20
+Aggregate Bytes Sent: 2400 (0.002 MB)
+Aggregate Messages Received: 0
+Aggregate Bytes Received: 2809 (0.003 MB)
+Overall Send Rate (across all clients, wall clock): 123.825 msgs/sec
+Overall Send Data Rate: 14.511 KB/s
+--- Latency Statistics ---
+No relevant messages received for latency calculation or listen_replies was false for all.
+--------------------------------------------------------

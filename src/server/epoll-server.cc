@@ -69,7 +69,7 @@ void EpollServer::assign_username(int client_sock, const std::string& desired_na
   // std::ostringstream oss1;
   // oss1 << "Welcome, " << desired_name << "!\n";
   // std::string welcome = oss1.str();
-  // send_message(client_sock, welcome.c_str(), welcome.size(), 0);
+  send_message(client_sock, welcome, welcome.size(), 0);
 
   SPDLOG_INFO("Client {} assigned username '{}'", client_sock, desired_name);
   }
@@ -149,7 +149,7 @@ void EpollServer::handle_list_command(int client_sock) {
   auto list = channel_mgr_->list_channels();
   std::string out = "Channels:\n";
   for (auto &ch : list) out += "- " + ch + "\n";
-  send_message(client_sock, out.c_str());
+  send_message(client_sock, out);
 }
 
 void EpollServer::handle_help_command(int client_sock) {
@@ -162,7 +162,7 @@ void EpollServer::handle_help_command(int client_sock) {
     "/msg @user <message> - Send a private message\n"
     "/sendfile <filename> - Upload file\n"
     "/help                - Show this help message\n";
-  send_message(client_sock, help_text.c_str());
+  send_message(client_sock, help_text);
 }
 
 void EpollServer::handle_sendfile_command(int client_sock, const std::string& msg) {
@@ -180,12 +180,19 @@ void EpollServer::handle_sendfile_command(int client_sock, const std::string& ms
 
 void EpollServer::handle_users_command(int client_sock) {
   std::string ch = client_channels_[client_sock];
+
   // std::string list = "Users in [" + ch + "]:\n";
+
   std::string list = fmt::format("Users in [{}]:\n",ch);
+
+//   std::ostringstream oss;
+// oss << "Users in [" << ch << "]:\n";
+// std::string list = oss.str();
+
   for (int fd : channel_mgr_->get_members(ch)) {
       list += "- " + usernames_[fd] + "\n";
   }
-  send_message(client_sock, list.c_str());
+  send_message(client_sock, list);
 }
 
 void EpollServer::handle_private_msg_command(int client_sock, const std::string& msg) {
@@ -209,7 +216,7 @@ void EpollServer::handle_private_msg_command(int client_sock, const std::string&
     }
 
     if (target_fd != -1)
-      send_message(target_fd, dm.c_str());
+      send_message(target_fd, dm);
     else
       send_message(client_sock, "User not found.\n");
   }
@@ -238,7 +245,7 @@ void EpollServer::handle_channel_message(int client_sock, const std::string& msg
 void EpollServer::broadcast_to_channel(const std::string &channel, const std::string &msg, int sender_fd) {
   for (int fd : channel_mgr_->get_members(channel)) {
     if (fd != sender_fd) {
-      send_message(fd, msg.c_str());
+      send_message(fd, msg);
     }
   }
 }
@@ -246,7 +253,7 @@ void EpollServer::broadcast_to_channel(const std::string &channel, const std::st
 void EpollServer::broadcast_message(const std::string &message, int sender_fd) {
   for (const auto &[fd, name] : client_usernames_) {
     if (fd != sender_fd) {
-      send_message(fd, message.c_str());
+      send_message(fd, message);
     }
   }
 }
@@ -268,8 +275,8 @@ void EpollServer::run() {
   }
 }
 
-int EpollServer::send_message(int client_sock, const char* msg, size_t len, int flags) {
-  ssize_t sent = send(client_sock, msg, len, flags);
+int EpollServer::send_message(int client_sock, const std::string& msg, size_t len, int flags) {
+  ssize_t sent = send(client_sock, msg.c_str(), len, flags);
   if (sent < 0) {
     SPDLOG_ERROR("Failed to send to client {}: {}", client_sock, strerror(errno));
     return -1;
@@ -277,7 +284,7 @@ int EpollServer::send_message(int client_sock, const char* msg, size_t len, int 
   return sent;
 }
 int EpollServer::send_message(int client_sock, const std::string& message) {
-  return send_message(client_sock, message.c_str(), message.size(), 0);
+  return send_message(client_sock, message, message.size(), 0);
 }
 
 }
