@@ -22,9 +22,15 @@ namespace tt::chat::server {
         int send_message(int client_sock, const char* msg, size_t len, int flags);
 
     private:
+        int base_port;
         int listen_sock_;
+        int udp_sock_;
         int epoll_fd_;
-
+        sockaddr_in multicast_addr_;
+        std::string multicast_group_;
+        std::unordered_map<std::string, int> udp_client_ids_;       // client_id (IP:Port) → virtual_fd
+        std::unordered_map<int, std::string> udp_fd_to_client_;
+        
         static constexpr int kBufferSize = 1024;
         static constexpr int kMaxEvents = 64;
 
@@ -56,8 +62,18 @@ namespace tt::chat::server {
         void handle_private_msg_command(int client_sock, const std::string& msg);
         void handle_channel_message(int client_sock, const std::string& msg);
 
-    };
+        void handle_udp_data();
+        void handle_udp_connect(const std::string& client_id, const sockaddr_in& client_addr);
+        int send_udp_message(const std::string& client_id, const std::string& message);
+        void setup_multicast_socket();
+        void handle_multicast_join(const std::string& client_id);
+        void handle_multicast_leave(const std::string& client_id);
+        void broadcast_multicast_message(const std::string& message, const std::string& sender_id = "");
+        void handle_multicast_data();
+        void setup_udp_socket();
+        void send_multicast(const std::string& message);
 
+    };
 }
 
 #endif

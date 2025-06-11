@@ -22,11 +22,13 @@ namespace tt::chat::client {
          */
         void send_message(const std::string &message);
         int get_socket_fd() const; // Getter for the socket
+        std::string receive_message();
         // Destroys the Client object, ensuring the socket is closed.
         ~Client();
 
     private:
         int socket_;
+        sockaddr_in server_addr_;
         /**
          * Creates a server address structure (sockaddr_in).
          * @param server_ip The IP address of the server.

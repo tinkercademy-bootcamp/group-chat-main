@@ -11,7 +11,9 @@
 namespace tt::chat::server {
 
 EpollServer::EpollServer(int port) {
+  base_port = port;
   setup_server_socket(port);
+  setup_udp_socket(); 
 
   epoll_fd_ = epoll_create1(0);
   check_error(epoll_fd_ < 0, "epoll_create1 failed");
@@ -24,6 +26,10 @@ EpollServer::EpollServer(int port) {
   ev.data.fd = listen_sock_;
   check_error(epoll_ctl(epoll_fd_, EPOLL_CTL_ADD, listen_sock_, &ev) < 0,
               "epoll_ctl listen_sock");
+
+  ev.data.fd = udp_sock_;
+  check_error(epoll_ctl(epoll_fd_, EPOLL_CTL_ADD, udp_sock_, &ev) < 0,
+              "epoll_ctl multicast_sock");
 }
 
 EpollServer::~EpollServer() {
@@ -31,14 +37,60 @@ EpollServer::~EpollServer() {
   close(epoll_fd_);
 }
 
+void EpollServer::setup_udp_socket() {
+    // 1. Create a single socket for all UDP communication
+    udp_sock_ = socket(AF_INET, SOCK_DGRAM, 0);
+    check_error(udp_sock_ < 0, "UDP socket creation failed");
+
+    // 2. Allow port reuse, essential for multicast
+    int reuse = 1;
+    setsockopt(udp_sock_, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse));
+
+    // 3. Bind to a port to receive both unicast and multicast messages
+    sockaddr_in addr{};
+    addr.sin_family = AF_INET;
+    addr.sin_addr.s_addr = INADDR_ANY;
+    addr.sin_port = htons(base_port); // Use the same base port as TCP for simplicity
+    check_error(bind(udp_sock_, (sockaddr*)&addr, sizeof(addr)) < 0, "UDP bind failed");
+
+    // 4. Join the multicast group to RECEIVE multicast packets
+    multicast_group_ = "239.1.1.1";
+    ip_mreq mreq{};
+    mreq.imr_multiaddr.s_addr = inet_addr(multicast_group_.c_str());
+    mreq.imr_interface.s_addr = INADDR_ANY;
+    check_error(setsockopt(udp_sock_, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq, sizeof(mreq)) < 0, "Joining multicast group failed");
+
+    // 5. Set TTL for SENDING outgoing multicast packets
+    int ttl = 1; // Confine to the local network
+    setsockopt(udp_sock_, IPPROTO_IP, IP_MULTICAST_TTL, &ttl, sizeof(ttl));
+
+    // 6. Pre-build the destination address for sending multicast messages
+    // (You should add `sockaddr_in multicast_addr_;` to your header)
+    multicast_addr_.sin_family = AF_INET;
+    multicast_addr_.sin_addr.s_addr = inet_addr(multicast_group_.c_str());
+    multicast_addr_.sin_port = htons(base_port);
+
+    SPDLOG_INFO("UDP socket setup on port {}. Multicast group {}:{}", base_port, multicast_group_, base_port);
+}
+
+void EpollServer::send_multicast(const std::string& message) {
+    ssize_t sent = sendto(udp_sock_, message.c_str(), message.size(), 0,
+                         (sockaddr*)&multicast_addr_, sizeof(multicast_addr_));
+    if (sent < 0) {
+        SPDLOG_ERROR("Failed to send multicast message: {}", strerror(errno));
+    }
+}
+
 void EpollServer::setup_server_socket(int port) {
   listen_sock_ = net::create_socket();
-  sockaddr_in address = net::create_address(port);
+  sockaddr_in address{};
+  address.sin_family = AF_INET;
   address.sin_addr.s_addr = INADDR_ANY;
+  address.sin_port = htons(port);
 
   int opt = 1;
   setsockopt(listen_sock_, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
-  check_error(bind(listen_sock_, (sockaddr *)&address, sizeof(address)) < 0, "bind failed");
+  check_error(bind(listen_sock_, (sockaddr *)&address, sizeof(address)) < 0, "TCP bind failed");
   check_error(listen(listen_sock_, 10) < 0, "listen failed");
 }
 
@@ -57,6 +109,50 @@ void EpollServer::handle_new_connection() {
   SPDLOG_INFO("New connection: {}", client_usernames_[client_sock]);
 
 }
+
+
+void EpollServer::handle_udp_data() {
+    char buffer[1024];
+    sockaddr_in client_addr;
+    socklen_t addr_len = sizeof(client_addr);
+    ssize_t len = recvfrom(udp_sock_, buffer, sizeof(buffer), 0, (sockaddr*)&client_addr, &addr_len);
+
+    if (len <= 0) {
+        SPDLOG_ERROR("UDP recvfrom failed: {}", strerror(errno));
+        return;
+    }
+
+    std::string msg(buffer, len);
+    std::string client_id = std::string(inet_ntoa(client_addr.sin_addr)) + ":" + std::to_string(ntohs(client_addr.sin_port));
+
+    // If client is new, they must send /connect first.
+    if (udp_client_ids_.find(client_id) == udp_client_ids_.end()) {
+        if (msg.rfind("/connect", 0) == 0) {
+            handle_udp_connect(client_id, client_addr);
+        } else {
+            SPDLOG_WARN("Ignoring message from unknown UDP client {}. Must /connect first.", client_id);
+        }
+        return;
+    }
+
+    // Existing client, parse their command.
+    int virtual_fd = udp_client_ids_[client_id];
+    parse_client_command(virtual_fd, msg);
+}
+
+
+void EpollServer::handle_udp_connect(const std::string& client_id, const sockaddr_in& client_addr) {
+  static int virtual_fd_counter = 10000;  // Start from a high number to avoid conflicts
+  int virtual_fd = virtual_fd_counter++;
+  
+  udp_client_ids_[client_id] = virtual_fd;
+  udp_fd_to_client_[virtual_fd] = client_id;
+  
+  client_usernames_[virtual_fd] = "user_" + std::to_string(virtual_fd);
+  
+  SPDLOG_INFO("New UDP connection from {}, assigned virtual fd {}", client_id, virtual_fd);
+}
+
 
 void EpollServer::assign_username(int client_sock, const std::string& desired_name) {
   std::string trimmed_name = desired_name;
@@ -255,11 +351,21 @@ void EpollServer::handle_channel_message(int client_sock, const std::string& msg
 }
 
 void EpollServer::broadcast_to_channel(const std::string &channel, const std::string &msg, int sender_fd) {
-  for (int fd : channel_mgr_->get_members(channel)) {
-    if (fd != sender_fd) {
-      send_message(fd, msg.c_str());
+    bool udp_multicast_sent = false;
+    for (int fd : channel_mgr_->get_members(channel)) {
+        if (fd == sender_fd) continue;
+
+        if (udp_fd_to_client_.count(fd)) {
+            // Member is a UDP client. Send the multicast message ONCE.
+            if (!udp_multicast_sent) {
+                send_multicast(msg);
+                udp_multicast_sent = true;
+            }
+        } else {
+            // Member is a TCP client. Send directly.
+            send_message(fd, msg);
+        }
     }
-  }
 }
 
 void EpollServer::broadcast_message(const std::string &message, int sender_fd) {
@@ -271,7 +377,7 @@ void EpollServer::broadcast_message(const std::string &message, int sender_fd) {
 }
 
 void EpollServer::run() {
-  SPDLOG_INFO("Server started with epoll");
+  std::cout<<"Server started with epoll"<<std::endl;
   epoll_event events[kMaxEvents];
 
   while (true) {
@@ -279,24 +385,37 @@ void EpollServer::run() {
     for (int i = 0; i < nfds; ++i) {
       int fd = events[i].data.fd;
       if (fd == listen_sock_) {
-        handle_new_connection();
+        handle_new_connection(); // New TCP connection
+      } else if (fd == udp_sock_) {
+        handle_udp_data(); // Data on the UDP socket
       } else {
-        handle_client_data(fd);
+        handle_client_data(fd); // Data from an existing TCP client
       }
     }
   }
 }
 
+// This is the overload that had the bug.
 int EpollServer::send_message(int client_sock, const char* msg, size_t len, int flags) {
-  ssize_t sent = send(client_sock, msg, len, flags);
-  if (sent < 0) {
-    SPDLOG_ERROR("Failed to send to client {}: {}", client_sock, strerror(errno));
-    return -1;
-  }
-  return sent;
+    if (udp_fd_to_client_.count(client_sock)) {
+        // Destination is a UDP client, so send via multicast.
+        // CORRECTED to use the parameters from this function
+        send_multicast(std::string(msg, len));
+        return len;
+    } else {
+        // Destination is a TCP client, send via unicast.
+        ssize_t sent = send(client_sock, msg, len, flags);
+        if (sent < 0) {
+            SPDLOG_ERROR("Failed to send to TCP client {}: {}", client_sock, strerror(errno));
+            return -1;
+        }
+        return sent;
+    }
 }
+
+// This overload correctly calls the one above. It's fine.
 int EpollServer::send_message(int client_sock, const std::string& message) {
-  return send_message(client_sock, message.c_str(), message.size(), 0);
+    return send_message(client_sock, message.c_str(), message.size(), 0);
 }
 
 }

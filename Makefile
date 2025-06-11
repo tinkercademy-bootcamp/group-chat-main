@@ -4,11 +4,11 @@
 CXX := g++
 
 # define the C/C++ compiler flags
-CXXFLAGS :=-std=c++20 -Wall -Wextra -pedantic -fsanitize=address
+CXXFLAGS :=-std=c++20 -Wall -Wextra -pedantic -fsanitize=address -DUDP_ENABLED
 
 CXX_DEBUG_FLAGS :=-g3 -ggdb3
 CXX_RELEASE_FLAGS :=-O3
-CXXFLAGS += -O2 -g -fno-omit-frame-pointer 
+CXXFLAGS += -O0 -g -fno-omit-frame-pointer 
 
 
 CXXFLAGS += $(CXX_DEBUG_FLAGS)
