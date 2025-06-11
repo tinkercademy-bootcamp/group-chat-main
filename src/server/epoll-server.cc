@@ -6,6 +6,7 @@
 
 #include <spdlog/spdlog.h>
 #include <fstream>
+#include <cctype> // Add this include for std::isspace
 
 namespace tt::chat::server {
 
@@ -84,10 +85,29 @@ void EpollServer::handle_new_connection() {
 }
 
 void EpollServer::assign_username(int client_sock, const std::string& desired_name) {
-  usernames_[client_sock] = desired_name;
-  std::string welcome = "Welcome, " + desired_name + "!\n";
+  std::string trimmed_name = desired_name;
+  // Remove leading/trailing whitespace
+  trimmed_name.erase(0, trimmed_name.find_first_not_of(" \t\n\r"));
+  trimmed_name.erase(trimmed_name.find_last_not_of(" \t\n\r") + 1);
+
+  if (trimmed_name.empty()) {
+    send_message(client_sock, "Username cannot be created.\n");
+    SPDLOG_WARN("Client {} attempted to set an empty username.", client_sock);
+    return;
+  }
+  if (username_set_.count(trimmed_name)) {
+    send_message(client_sock, "Duplicate usernames are not allowed.\n");
+    return;
+  }
+  // Remove old username from set if exists
+  if (usernames_.count(client_sock)) {
+    username_set_.erase(usernames_[client_sock]);
+  }
+  usernames_[client_sock] = trimmed_name;
+  username_set_.insert(trimmed_name);
+  std::string welcome = "Welcome, " + trimmed_name + "!\n";
   send_message(client_sock, welcome.c_str(), welcome.size(), 0);
-  SPDLOG_INFO("Client {} assigned username '{}'", client_sock, desired_name);
+  SPDLOG_INFO("Client {} assigned username '{}'", client_sock, trimmed_name);
   }
 
 void EpollServer::handle_client_data(int client_sock) {
@@ -102,10 +122,27 @@ void EpollServer::handle_client_data(int client_sock) {
   parse_client_command(client_sock, msg);
 }
 
-void EpollServer::parse_client_command(int client_sock, const std::string& msg){
-    if (msg.rfind("/name ", 0) == 0) {
-    handle_name_command(client_sock, msg);
-  } else if (msg.rfind("/create ", 0) == 0) {
+const std::string LATENCY_TEST_MESSAGE_PREFIX = "LATENCY_TEST_MSG::";
+
+void EpollServer::parse_client_command(int client_sock, const std::string& msg) {
+
+    if (msg.rfind(LATENCY_TEST_MESSAGE_PREFIX, 0) == 0) {
+        std::string current_channel = client_channels_[client_sock];
+        if (current_channel.empty()) {
+            SPDLOG_WARN("Client {} (test client?) sent latency message but not in a channel.", client_sock);
+            send_message(client_sock, "ERROR: Send failed. Not in a channel for test message.\n");
+            return;
+        }
+        broadcast_to_channel(current_channel, msg, client_sock);
+
+    } 
+  else if (msg.rfind("/name", 0) == 0 && msg.size() > 5 && std::isspace(msg[5])) {
+      handle_name_command(client_sock, msg);
+  }
+  else if (msg.rfind("/name", 0) == 0) {
+    send_message(client_sock, "Username cannot be created.\n");
+  }
+  else if (msg.rfind("/create ", 0) == 0) {
     handle_create_command(client_sock, msg);
   } else if (msg.rfind("/join ", 0) == 0) {
     handle_join_command(client_sock, msg);
@@ -117,21 +154,39 @@ void EpollServer::parse_client_command(int client_sock, const std::string& msg){
     handle_sendfile_command(client_sock, msg);
   } else if (msg == "/users") {
     handle_users_command(client_sock);
-  } else if (msg.rfind("/msg ", 0) == 0) {
+  } else if (msg.rfind("/dm ", 0) == 0) {
     handle_private_msg_command(client_sock, msg);
-  } else {
+  } else if (msg.rfind("/message ", 0) == 0) {
     handle_channel_message(client_sock, msg);
+  } else {
+    send_message(client_sock, "Invalid Command.");
   }
 }
 
 void EpollServer::handle_name_command(int client_sock, const std::string& msg) {
-  assign_username(client_sock, msg.substr(6));
+  std::string name = msg.substr(6);
+  // Remove leading/trailing whitespace
+  name.erase(0, name.find_first_not_of(" \t\n\r"));
+  name.erase(name.find_last_not_of(" \t\n\r") + 1);
+  if (name.empty()) {
+    send_message(client_sock, "Username cannot be created.\n");
+    return;
+  }
+  assign_username(client_sock, name);
 }
 
 void EpollServer::handle_create_command(int client_sock, const std::string& msg) {
   std::string ch = msg.substr(8);
-  if(ch == "" || ch[0] == ' ') {
+  // Remove leading/trailing whitespace
+  ch.erase(0, ch.find_first_not_of(" \t\n\r"));
+  ch.erase(ch.find_last_not_of(" \t\n\r") + 1);
+
+  if(ch.empty() || ch[0] == ' ') {
     send_message(client_sock, "The channel name cannot be empty and cannot begin with a white space.\n");
+    return;
+  }
+  if (channel_mgr_->has_channel(ch)) {
+    send_message(client_sock, "Duplicate channel names are not allowed.\n");
     return;
   }
   channel_mgr_->create_channel(ch);
@@ -171,13 +226,14 @@ void EpollServer::handle_list_command(int client_sock) {
 void EpollServer::handle_help_command(int client_sock) {
   std::string help_text =
     "Available commands:\n"
-    "/list                 - List available channels\n"
+    "/list                - List available channels\n"
     "/create <name>       - Create a new channel\n"
     "/join <name>         - Join a channel\n"
     "/users               - List users in current channel\n"
-    "/msg @user <message> - Send a private message\n"
+    "/dm @user <message>  - Send a private message\n"
     "/sendfile <filename> - Upload file\n"
-    "/help                - Show this help message\n";
+    "/help                - Show this help message\n"
+    "/message <message>   - Send a message to channel\n";
   send_message(client_sock, help_text.c_str());
 }
 
@@ -198,7 +254,9 @@ void EpollServer::handle_users_command(int client_sock) {
   std::string ch = client_channels_[client_sock];
   std::string list = "Users in [" + ch + "]:\n";
   for (int fd : channel_mgr_->get_members(ch)) {
-      list += "- " + usernames_[fd] + "\n";
+      // Only show users with assigned usernames
+      if (usernames_.count(fd))
+        list += "- " + usernames_[fd] + "\n";
   }
   send_message(client_sock, list.c_str());
 }
@@ -231,7 +289,7 @@ void EpollServer::handle_channel_message(int client_sock, const std::string& msg
     return;
   }
 
-  std::string full_msg = "[" + ch + "] " + usernames_[client_sock] + ": " + msg;
+  std::string full_msg = "[" + ch + "] " + usernames_[client_sock] + ": " + msg.substr(9);
   broadcast_to_channel(ch, full_msg, client_sock);
 }
 
@@ -276,4 +334,4 @@ int EpollServer::send_message(int client_sock, const std::string& message) {
   return send_message(client_sock, message.c_str(), message.size(), 0);
 }
 
-} 
+}

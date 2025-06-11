@@ -54,13 +54,12 @@ namespace tt::chat::server {
         int epoll_fd_;
         struct io_uring ring_;
 
-
         static constexpr int kBufferSize = 1024;
         static constexpr int kMaxEvents = 64;
 
-
         std::unordered_map<int, std::string> client_usernames_;
         std::unordered_map<int, std::string> usernames_;
+        std::unordered_set<std::string> username_set_;
         std::unique_ptr<ChannelManager> channel_mgr_;
         std::unordered_map<int, std::string> client_channels_;
 
